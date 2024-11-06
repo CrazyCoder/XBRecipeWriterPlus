@@ -15,14 +15,20 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@backpackapp-io/react-native-toast": "^0.11.0",
+    "@eva-design/eva": "^2.2.0",
     "@expo/vector-icons": "^14.0.2",
     "@react-navigation/native": "^6.0.2",
+    "@tamagui/config": "^1.115.5",
+    "@ui-kitten/eva-icons": "^5.3.1",
     "expo": "~51.0.28",
     "expo-constants": "~16.0.2",
+    "expo-dev-client": "~4.0.28",
     "expo-font": "~12.0.9",
     "expo-linking": "~6.3.1",
     "expo-router": "~3.5.23",
     "expo-splash-screen": "~0.27.5",
+    "expo-sqlite": "~14.0.6",
     "expo-status-bar": "~1.12.1",
     "expo-system-ui": "~3.0.7",
     "expo-web-browser": "~13.0.3",
@@ -30,10 +36,16 @@
     "react-dom": "18.2.0",
     "react-native": "0.74.5",
     "react-native-gesture-handler": "~2.16.1",
+    "react-native-nfc-manager": "^3.16.0",
     "react-native-reanimated": "~3.10.1",
+    "react-native-root-siblings": "^5.0.1",
+    "react-native-root-toast": "^3.6.0",
     "react-native-safe-area-context": "4.10.5",
     "react-native-screens": "3.31.1",
-    "react-native-web": "~0.19.10"
+    "react-native-svg": "9.13.6",
+    "react-native-uuid": "^2.0.2",
+    "react-native-web": "~0.19.10",
+    "tamagui": "^1.115.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

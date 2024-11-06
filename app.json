@@ -9,17 +9,20 @@
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "resizeMode": "cover"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.terminaldisclaimer.XBRecipeWriter"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.NFC"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -27,10 +30,18 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",[
+      "react-native-nfc-manager",{
+          "includeNdefEntitlement": false
+        }]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "06ce7f2c-1928-4750-b8de-788849a53ad3"
+      }
     }
   }
 }
