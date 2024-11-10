@@ -85,7 +85,6 @@ class NFC {
                 return flattenedData
             }
         }
-        //console.log('Tag found', tag);
 
         return null;
     }
@@ -132,7 +131,6 @@ class NFC {
             data = data.concat(padding);
         }
 
-        console.log("write card");
 
 
         // the resolved tag object will contain `ndefMessage` property

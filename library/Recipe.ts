@@ -63,7 +63,6 @@ class Recipe {
         }
         if (json) {
             var jsonRecipe = JSON.parse(json);
-            //console.log(jsonRecipe.pours);
             this.grindRPM = jsonRecipe.grindRPM;
             this.grindSize = jsonRecipe.grindSize;
             if (jsonRecipe.uuid) {
@@ -105,7 +104,6 @@ class Recipe {
 
     public addPour(pourNumber: number) {
         const newPour = new Pour(pourNumber + 2, 1, 39, 30, 0, 0, 0);
-        console.log(newPour);
         this.pours.splice(pourNumber + 1, 0, newPour);
         for (let i = 0; i < this.pours.length; i++) {
             this.pours[i].pourNumber = i + 1;

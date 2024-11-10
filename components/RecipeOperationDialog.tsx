@@ -52,7 +52,7 @@ export function RecipeOperationDialog({
         >
           <Popover.Arrow  borderWidth={1} borderColor="$colorTransparent" />
   
-          <YStack gap="$3" backgroundColor="white" padding="$4" borderRadius={20}>
+          <YStack backgroundColor="white" borderRadius={20}>
           <Popover.Close asChild>
               <Button
                 size="$3"

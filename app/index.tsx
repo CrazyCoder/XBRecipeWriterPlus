@@ -64,7 +64,6 @@ export default function HomeScreen() {
       for (let i = 0; i < recipeData.length; i++) {
         recipes.push(new Recipe(undefined, JSON.stringify(recipeData[i])));
       }
-      //console.log(recipes);
     }
     return recipes;
   }
@@ -117,7 +116,7 @@ export default function HomeScreen() {
     <>
 
       <ScrollView backgroundColor="#dddddd">
-        <YStack maxWidth={600} >
+        <YStack maxWidth={600} flexDirection="column" >
           {recipesJSON ? getRecipes()
             .sort((a: Recipe, b: Recipe) => a.title.localeCompare(b.title))
             .map((recipe: Recipe, index) => {

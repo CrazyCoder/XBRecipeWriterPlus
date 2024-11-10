@@ -53,7 +53,6 @@ export default function editRecipe() {
   }
 
   useEffect(() => {
-    console.log('Original Recipe JSON:' + recipeJSON);
     setRecipeInJSON(recipeJSON as string);
   }, []);
 
@@ -82,32 +81,14 @@ export default function editRecipe() {
 
 
 
-  /* const writeCard = useCallback(async () => {
-     console.log('Write Card')
-     console.log(recipeInJSON);
-     try {
-       var r = getRecipe();
-       console.log(r);
-       if (r !== null) {
-         console.log(r);
-         if (r) {
-           await r.writeCard();
-         }
-       }
-     } catch (e) {
-       console.log("Write error:" + e);
-       Alert.alert('Write Error', 'There was an error writing the recipe to the card');
-     }
-   }, [recipeInJSON]);*/
+
 
 
 
   async function writeCard() {
     console.log('Write Card')
-    console.log(recipeInJSON);
     try {
       var r = getRecipe();
-      console.log(r);
       if (r !== null) {
         console.log(r);
         if (r.isPourVolumeValid()) {

@@ -27,12 +27,10 @@ export default function ValidatedInput(props: Props) {
   const [value, setValue] = useState(props.initialValue);
 
   async function validate(value: string): Promise<boolean> {
-    console.log("Validate:" + value);
     if (value && value !== "") {
       setValue(parseInt(value));
       if (props.minimumValue !== undefined && props.maximumValue !== undefined) {
         if (parseInt(value) >= props.minimumValue && parseInt(value) <= props.maximumValue) {
-          console.log("Validated");
           setValidated(() => true);
           props.setErrorFunction(false);
 
@@ -66,7 +64,6 @@ export default function ValidatedInput(props: Props) {
 
   async function onValueChange(value: number[]) {
     var validEdit = await validate(value[0].toString());
-    console.log(value[0]);
   }
 
   function getErrorMessage(): string {
@@ -83,17 +80,17 @@ export default function ValidatedInput(props: Props) {
   }
   return (
     <>
-      <YStack maxWidth={400}>
-        <XStack maxWidth={400} padding="$2" alignItems="center" alignSelf="flex-start" space>
+      <YStack >
+        <XStack padding="$2" alignItems="center" alignSelf="flex-start" flex={1} space>
           <Label>{props.label}</Label>
-          <Slider  onValueChange={onValueChange} minWidth={150} value={value !== undefined && (value >= props.minimumValue && value <= props.maximumValue) ? [value] : [props.minimumValue]} min={props.minimumValue ? props.minimumValue : 0} max={props.maximumValue ? props.maximumValue : 100} step={props.step ? props.step : 1}>
-            <Slider.Track borderWidth={1} borderColor="red">
+          <Slider flex={1} onValueChange={onValueChange} value={value !== undefined && (value >= props.minimumValue && value <= props.maximumValue) ? [value] : [props.minimumValue]} min={props.minimumValue ? props.minimumValue : 0} max={props.maximumValue ? props.maximumValue : 100} step={props.step ? props.step : 1}>
+            <Slider.Track flex={1} borderWidth={1} borderColor="red">
               <Slider.TrackActive />
             </Slider.Track>
             <Slider.Thumb size="$2" index={0} circular />
 
           </Slider>
-          <Input padding="$2" value={getProcessedValue()} width={10 + props.maxLength * 13} maxWidth={10 + props.maxLength * 13} onChangeText={(val) => validate(val)} focusStyle={{ borderColor: validated ? "blue" : "red" }} borderColor={validated ? "blue" : "red"} {...props}>
+          <Input padding="$2" value={getProcessedValue()}  onChangeText={(val) => validate(val)} focusStyle={{ borderColor: validated ? "blue" : "red" }} borderColor={validated ? "blue" : "red"} {...props}>
 
           </Input>
 

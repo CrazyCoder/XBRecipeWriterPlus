@@ -1,11 +1,14 @@
 node_modules/
 .expo/
+ios/
 dist/
 npm-debug.*
 *.jks
 *.p8
 *.p12
 *.key
+*.ipa
+*.psd
 *.mobileprovision
 *.orig.*
 web-build/
@@ -18,15 +21,4 @@ web-build/
 
 expo-env.d.ts
 # @end expo-cli
-build-1729113728010.ipa
-build-1729114707555.ipa
-build-1729218332728.ipa
-build-1729560021405.ipa
-build-1730341760739.ipa
-build-1730343945590.ipa
-build-1730344778626.ipa
-build-1730345327856.ipa
-build-1730385524549.ipa
-build-1730916261473.ipa
-build-1730916532311.ipa
-build-1730936031052.ipa
+
