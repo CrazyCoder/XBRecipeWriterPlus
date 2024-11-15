@@ -67,7 +67,7 @@ export default function LabeledInput(props: Props) {
         <XStack maxWidth={400} paddingLeft="$2" paddingVertical="$2" alignItems="center" alignSelf="flex-start" space>
           <Label>{props.label}</Label>
     
-          <Input width={props.maxLength * 13} maxWidth={props.maxLength * 13} disabled={props.disabled} marginLeft="$1" value={value ? "" + value : ""} onChangeText={(val) => validate(val)} focusStyle={{ borderColor: validated ? "blue" : "red" }} borderColor={validated ? "blue" : "red"} {...props} backgroundColor={props.disabled ? "#D3D3D3" : "white"}>
+          <Input width={props.maxLength * 13} maxWidth={props.maxLength * 13} disabled={props.disabled} marginLeft="$1" value={value ? "" + value : ""} onChangeText={(val) => validate(val)} focusStyle={{ borderColor: validated ? "gray" : "red" }} borderColor={validated ? "gray" : "red"} {...props} backgroundColor={props.disabled ? "#D3D3D3" : "$background"} color={props.disabled ? "black" : "$text"}>
 
           </Input>
 

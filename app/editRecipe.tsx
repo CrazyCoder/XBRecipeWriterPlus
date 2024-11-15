@@ -20,10 +20,10 @@ import TooltipComponent from "@/components/TooltipComponent";
 
 
 export default function editRecipe() {
-  var { recipeJSON } = useLocalSearchParams()
+  var { recipeJSON, saveEnabled } = useLocalSearchParams()
   const [recipeInJSON, setRecipeInJSON] = useState<string>("");
   const [inputError, setInputError] = useState(false);
-  const [enableSave, setEnableSave] = useState(false);
+  const [enableSave, setEnableSave] = useState(saveEnabled && saveEnabled === "true");
   const [enableMachineRatio, setEnableMachineRatio] = useState(false);
   const [key, setKey] = useState(0);
 
@@ -156,8 +156,17 @@ export default function editRecipe() {
     var db = new RecipeDatabase();
     var recipe = getRecipe()!;
     if (recipe.isPourVolumeValid()) {
+      if(!db.doesTitleExist(recipe.title)) {
       db.updateRecipe(recipe.uuid, recipe);
       navigation.goBack();
+      } else {
+        Alert.alert('Save Error', 'The title of \"' + recipe.title + "\" already exists. Please choose a different name", [
+          {
+            text: 'Ok',
+            onPress: () => console.log('Cancel Pressed'),
+          },
+        ]);
+      }
     } else {
       Alert.alert('Pour Volume Error', 'Your individual pour volumes must add up to the total volume', [
         {
@@ -288,13 +297,16 @@ export default function editRecipe() {
           <XStack maxHeight="90%">
             <ScrollView padding="$4" >
               <YStack maxWidth={600}>
-                <LabeledInput setErrorFunction={setInputError} width={310} maxLength={23} initialValue={getRecipe()!.title} label="Title" onValidEditFunction={editInputComplete} validateInput={(data) => {
+                <XStack><LabeledInput setErrorFunction={setInputError} width={290} maxLength={23} initialValue={getRecipe()!.title} label="Title" onValidEditFunction={editInputComplete} validateInput={(data) => {
                   console.log("Title:" + data);
                   if (data.length > 0) {
                     return true;
                   }
                   return false;
                 }} errorMessage="You must have a title" />
+                <TooltipComponent paddingLeft="$2" content="This is the title of the recipe for use in this app only. It is never stored on the card. So that's why this field is blank when you've just read in a card" />
+
+                </XStack>
                 <XStack>
                   <LabeledInput setErrorFunction={setInputError} width={110} maxLength={8} initialValue={getRecipe()!.xid} label="XID" onValidEditFunction={editInputComplete} />
                   <TooltipComponent content="This is a 9 character unique identifier for the recipe that is used by the mobile app to look up the recipe online. It can be any alphanumeric value. Importantly, if you don't want the mobile app to show the wrong recipe, I'd probably change this. But if you do that, it won't show any recipe at all in the app (although it should still work on the machine) " />
@@ -308,7 +320,7 @@ export default function editRecipe() {
                 {enableMachineRatio ?
                   <XStack>
                     <LabeledInput disabled={true} setErrorFunction={setInputError} maxLength={5} initialValue={"1:" + getRecipe()!.getMachineRatio()} label="Machine Ratio" />
-                    <TooltipComponent content="This is the ratio actually displayed on the machine. IT CAN BE IGNORED. And that also means, if you are seeing this that you changed the dosage. The XBloom assumes that all recipe cards are for 15g. The ratio that is displayed on the machine does not actually change what the machine does. It is simply there as a check to make sure your pour volumes are correct. So for dosages greater than 15g, this app adjusts that ratio to account for different dosages. AGAIN, this does not affect the functionality of the machine. The ratio displayed on the machine is inforamtional only and CAN BE IGNORED.  " />
+                    <TooltipComponent paddingLeft="$1" content="This is the ratio actually displayed on the machine. IT CAN BE IGNORED. And that also means, if you are seeing this that you changed the dosage. The XBloom assumes that all recipe cards are for 15g. The ratio that is displayed on the machine does not actually change what the machine does. It is simply there as a check to make sure your pour volumes are correct. So for dosages greater than 15g, this app adjusts that ratio to account for different dosages. AGAIN, this does not affect the functionality of the machine. The ratio displayed on the machine is informational only and CAN BE IGNORED.  " />
                   </XStack>
                   : ""}
 
@@ -319,7 +331,7 @@ export default function editRecipe() {
                 </XStack>
 
                 {getRecipe() ? getRecipe()!.pours.map((pour, index) => (
-                  <YStack key={index} space="$2.5" borderWidth={2} marginVertical="$2" borderRadius={10}>
+                  <YStack key={index} space="$2.5" borderWidth={2} borderColor="gray" marginVertical="$2" borderRadius={10}>
                     <YStack padding="$2">
                       <XStack justifyContent="space-between">
                         <H6 fontSize={20} fontWeight={700}>Pour {pour.getPourNumber()}</H6>
@@ -330,7 +342,7 @@ export default function editRecipe() {
                           <IconButton onPress={() => addPour(index)} title="" icon={<AntDesign name="pluscircle" size={24} color="green" />}></IconButton>
                         </XStack>
                       </XStack>
-                      <ValidatedInput setErrorFunction={setInputError} initialValue={pour.getVolume()} minimumValue={1} maximumValue={350} step={1} pourNumber={index} label="Volume" maxLength={3} inputMode="numeric" style={{ maxWidth: 100 }} onValidEditFunction={editInputComplete} />
+                      <ValidatedInput setErrorFunction={setInputError} initialValue={pour.getVolume()} minimumValue={1} maximumValue={240} step={1} pourNumber={index} label="Volume" maxLength={3} inputMode="numeric" style={{ maxWidth: 100 }} onValidEditFunction={editInputComplete} />
 
                       <ValidatedInput setErrorFunction={setInputError} initialValue={pour.getTemperature()} minimumValue={39} maximumValue={95} step={1} pourNumber={index} label="Temperature (c)" maxLength={2} inputMode="numeric" onValidEditFunction={editInputComplete} />
 

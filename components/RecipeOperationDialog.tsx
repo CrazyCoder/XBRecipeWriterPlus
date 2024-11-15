@@ -6,18 +6,23 @@ import { Adapt, Button, Input, Label, Popover, XStack, YStack } from 'tamagui'
 
 
 export function RecipeOperationDialog({
-    Icon,
+    showDialog,
     Name,
     shouldAdapt,
     rerenderFunction,
     ...props
-  }: PopoverProps & { Icon?: any; Name?: string; shouldAdapt?: boolean, rerenderFunction: () => void
+  }: PopoverProps & { showDialog:boolean, Name?: string; shouldAdapt?: boolean, rerenderFunction: () => void
   }) {
+
+    function onOpenChange(open: boolean){
+      if(!open){
+        rerenderFunction();
+      }
+    }
+
     return (
-      <Popover  size="$1" allowFlip {...props}>
-        <Popover.Trigger asChild>
-          <Button backgroundColor="#dddddd" icon={Icon} />
-        </Popover.Trigger>
+      <Popover  size="$1" allowFlip {...props} open={showDialog} onOpenChange={(open)=>onOpenChange(open)}>
+     
   
         {shouldAdapt && (
           <Adapt when="sm" platform="touch">
@@ -59,7 +64,7 @@ export function RecipeOperationDialog({
                 onPress={() => {
                     var db = new RecipeDatabase();
                     db.cloneRecipe(Name!);
-                    rerenderFunction();
+                    //rerenderFunction();
                 }}
               >
                 Duplicate
@@ -72,7 +77,7 @@ export function RecipeOperationDialog({
                 onPress={() => {
                   var db = new RecipeDatabase();
                   db.deleteRecipe(Name!);
-                  rerenderFunction();
+                  //rerenderFunction();
                 }}
               >
                 Delete

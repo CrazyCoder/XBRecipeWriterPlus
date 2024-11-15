@@ -6,6 +6,8 @@ import { NfcTech } from 'react-native-nfc-manager';
 global.Buffer = require('buffer').Buffer;
 class NFC {
 
+    private totalblocks = 0;
+
     constructor() {
 
     }
@@ -125,9 +127,14 @@ class NFC {
 
     async writeCard(data: number[], toastID?: string) {
         //await NfcManager.requestTechnology(NfcTech.Iso15693IOS);
-
-        if (data.length < 128) {
-            const padding = new Array(128 - data.length).fill(0);
+        var info = await NfcManager.iso15693HandlerIOS.getSystemInfo(34);
+        if(info){
+        let totalBlocks = info.blockCount * info.blockSize;
+        let availableRecipeBlocks = totalBlocks - 32; //accounts for 32 byte hash
+        console.log("CardInfo:" + JSON.stringify(info));
+        console.log("Total Blocks:" + totalBlocks);
+        if (data.length < availableRecipeBlocks) {
+            const padding = new Array(availableRecipeBlocks - data.length).fill(0);
             data = data.concat(padding);
         }
 
@@ -136,7 +143,7 @@ class NFC {
         // the resolved tag object will contain `ndefMessage` property
         //const nfcTag = await NfcManager.getTag();
         await this.writeBlocks(8, data);
-
+    }
     }
 
 

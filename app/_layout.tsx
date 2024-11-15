@@ -1,19 +1,18 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import * as eva from '@eva-design/eva';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Button, TamaguiProvider, Text, Theme } from "tamagui";
-import { EvaIconsPack } from '@ui-kitten/eva-icons';
+import {  PortalProvider, TamaguiProvider, Text, Theme } from "tamagui";
 import config from '../tamagui.config' // your configuration
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Toasts } from '@backpackapp-io/react-native-toast';
 
+import { ShareIntentProvider, useShareIntentContext } from "expo-share-intent";
 
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -22,6 +21,7 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
 
 
+  const router = useRouter();
 
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
@@ -59,7 +59,13 @@ export default function RootLayout() {
   return (
     <>
 
-
+    <ShareIntentProvider 
+    options={{
+      debug: true,
+      resetOnBackground: true,
+      
+      }}
+    >
       <TamaguiProvider config={config}>
         <Theme name={colorScheme}>
           <ThemeProvider
@@ -67,7 +73,7 @@ export default function RootLayout() {
           >
             <SafeAreaProvider>
               <GestureHandlerRootView>
-
+              <PortalProvider>
                 <Stack
                   screenOptions={{
                     headerStyle: {
@@ -82,12 +88,14 @@ export default function RootLayout() {
                   <Stack.Screen name="index" options={{}} />
                 </Stack>
                 <Toasts />
+                </PortalProvider>
+
               </GestureHandlerRootView>
             </SafeAreaProvider>
           </ThemeProvider>
         </Theme>
       </TamaguiProvider>
-
+    </ShareIntentProvider>
     </>
   );
 }

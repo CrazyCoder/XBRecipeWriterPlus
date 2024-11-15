@@ -272,11 +272,17 @@ class Recipe {
         console.log("CheckSum:" + this.convertNumberArrayToHex(data));
         console.log("CheckSum:" + checkSum + ":" + this.checksum);
         data.push(checkSum);
+        
+        data.push(0x00);
+        data.push(0x00); //this is usually F4 (but not always), but it doesn't seem to matter 
 
-        var suffix = [];
+        //these next two seem open, so writing dosage there
+        data.push(0xBB)
+        data.push(this.getDosage())
+        /*var suffix = [];
         for (let i = 0; i < this.suffixArray.length; i++) {
-            suffix[i] = 0;
-        }
+           suffix[i] = 0;
+        }*/
         //data = data.concat(suffix);
         //data = data.concat(this.suffixArray);
         data.splice(0, 32);
@@ -363,6 +369,13 @@ class Recipe {
 
             index += 8
             pourNum++;
+        }
+
+        //check if its a recipe with a changed dosage made by this application
+        let thirdDatum = data[46 + (numberOfPours * 8)]
+        if (thirdDatum == 0xBB) {
+            this.dosage = data[47 + (numberOfPours * 8)]
+            this.ratio = Math.round(this.getPourTotalVolume() / this.dosage);
         }
     }
 

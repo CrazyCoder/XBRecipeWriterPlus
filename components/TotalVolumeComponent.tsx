@@ -17,7 +17,7 @@ export default function TotalVolumeComponent(props: {
         paddingLeft="$2"
       >
         <Label  fontWeight="700"  fontSize="$8" >Total Volume:</Label>
-        <Label  fontWeight="700" color={props.recipe!.isPourVolumeValid() ? "black" : "red"} fontSize="$8" >{" " + props.recipe!.getPourTotalVolume()}</Label>
+        <Label  fontWeight="700" color={props.recipe!.isPourVolumeValid() ? "$text" : "red"} fontSize="$8" >{" " + props.recipe!.getPourTotalVolume()}</Label>
         <Label  paddingRight="$1" fontWeight="700" fontSize="$8" >{"/" + props.recipe!.getTotalVolume() + " ml"}</Label>
 
 

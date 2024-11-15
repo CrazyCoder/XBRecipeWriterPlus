@@ -90,7 +90,7 @@ export default function ValidatedInput(props: Props) {
             <Slider.Thumb size="$2" index={0} circular />
 
           </Slider>
-          <Input padding="$2" value={getProcessedValue()}  onChangeText={(val) => validate(val)} focusStyle={{ borderColor: validated ? "blue" : "red" }} borderColor={validated ? "blue" : "red"} {...props}>
+          <Input padding="$2" value={getProcessedValue()}  onChangeText={(val) => validate(val)} focusStyle={{ borderColor: validated ? "gray" : "red" }} borderColor={validated ? "gray" : "red"} {...props}>
 
           </Input>
 

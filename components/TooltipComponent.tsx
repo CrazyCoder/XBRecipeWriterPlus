@@ -2,14 +2,17 @@
 import type { TooltipProps } from 'tamagui'
 import { Button, Paragraph, Tooltip, TooltipGroup, XStack, YStack } from 'tamagui'
 import { AntDesign } from "@expo/vector-icons";
-import { Alert } from 'react-native';
+import { Alert, useColorScheme } from 'react-native';
 
 
 
 export default function TooltipComponent(props: {
+ 
  content: string
+ paddingLeft?: string
 }) {
 
+  const colorScheme = useColorScheme();
   async function handlePress() {
     Alert.alert('What is this?', props.content, [
       {
@@ -21,8 +24,8 @@ export default function TooltipComponent(props: {
 
 
   return (
-    <YStack>
-      <AntDesign onPress={()=>handlePress()} name="questioncircle" size={20} color="blue" />
+    <YStack paddingLeft={props.paddingLeft}>
+      <AntDesign onPress={()=>handlePress()} name="questioncircle" size={20} color={colorScheme=="light" ? "blue" : "gray"}  />
     </YStack>
   )
 }

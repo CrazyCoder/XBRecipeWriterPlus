@@ -14,9 +14,15 @@ export default function RecipeItem(props: {
   onPress: () => void
 }) {
   const [pressed, setPressed] = useState(false)
+  const [showDialog, setShowDialog] = useState(false)
   
   async function onPress(){
     props.onPress();
+  }
+
+  async function  rerender(){
+    setShowDialog(false);
+    props.rerenderFunction();
   }
 
   function getStyle(): any{
@@ -36,13 +42,13 @@ export default function RecipeItem(props: {
       padding="$2"
       flexDirection='row'
     >
-      <Pressable style={getStyle()}  onPressIn={()=>setPressed(true)} onPress={()=>onPress()} onPressOut={()=>setPressed(false)} >
+      <Pressable style={getStyle()} onLongPress={()=>setShowDialog(true)} onPressIn={()=>setPressed(true)} onPress={()=>onPress()} onPressOut={()=>setPressed(false)} >
         <YStack paddingHorizontal="$2" paddingVertical="$1" alignItems='center'>
           <H5 paddingVertical="$1">{props.recipe.title}</H5>
           <XStack flex={1} justifyContent='space-evenly' width="100%" flexDirection='row'>
             <YStack >
               <Circle size="$7" borderColor="#99942e"  borderWidth={1}><Text fontSize={30} fontWeight={200}>{"1:" + props.recipe.getRatio()}</Text></Circle>
-              <Text  alignSelf='center'>Ratio</Text>
+              <Text alignSelf='center'>Ratio</Text>
             </YStack>
             <YStack>
               <XStack flex={1} alignItems='center' justifyContent='center' borderColor="#6faff0" borderWidth={2}><Text padding="$2" fontSize={40} fontWeight={700}>{props.recipe.getTotalVolume() +" ml"}</Text></XStack>
@@ -55,13 +61,13 @@ export default function RecipeItem(props: {
           </XStack>
         </YStack>
       </Pressable>
-      {/*<RecipeOperationDialog
+      <RecipeOperationDialog
           shouldAdapt={true}
-          placement="top"
-          Icon={<Entypo name="dots-three-vertical" size={24} color="black" />}
+          placement="left"
+          showDialog={showDialog}
           Name={props.recipe.uuid}
-          rerenderFunction={props.rerenderFunction}
-        />*/}
+          rerenderFunction={rerender}
+        />
     </XStack>
   )
 }
