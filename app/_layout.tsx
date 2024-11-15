@@ -1,6 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -12,16 +12,31 @@ import config from '../tamagui.config' // your configuration
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Toasts } from '@backpackapp-io/react-native-toast';
 
-import { ShareIntentProvider, useShareIntentContext } from "expo-share-intent";
+import { ShareIntentProvider } from "expo-share-intent";
+import * as Sentry from '@sentry/react-native';
+import { captureConsoleIntegration } from "@sentry/integrations";
+
+
+Sentry.init({
+  dsn: 'https://3dd2da678aa49988315e2313b544d7d7@o4508303878389760.ingest.us.sentry.io/4508303882846208',
+  integrations: [
+    //captureConsoleIntegration({ levels: ["warn", "log", "LOG", "error"] }),
+  ],
+  tracesSampleRate: 1.0,
+  // profilesSampleRate is relative to tracesSampleRate.
+  // Here, we'll capture profiles for 100% of transactions.
+  profilesSampleRate: 1.0,
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // enableSpotlight: __DEV__,
+});
 
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
 
-
-  const router = useRouter();
+function RootLayout() {
 
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
@@ -61,7 +76,7 @@ export default function RootLayout() {
 
     <ShareIntentProvider 
     options={{
-      debug: true,
+      debug: false,
       resetOnBackground: true,
       
       }}
@@ -99,3 +114,6 @@ export default function RootLayout() {
     </>
   );
 }
+
+export default Sentry.wrap(RootLayout);
+

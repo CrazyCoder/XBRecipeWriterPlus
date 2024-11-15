@@ -31,12 +31,10 @@ export default function ImportRecipeComponent(props: {
 
 
   useEffect(() => {
-    console.log("ImportRecipeComponent useEffect");
     if (props.recipeId) {
       var xbloom = new XBloomRecipe(props.recipeId);
       xbloom.fetchRecipeDetail().then(() => {
       if (xbloom) {
-        console.log("Img:" + xbloom.getImageURL());
         setXBloomRecipe(xbloom);
         setDisplayDialog(true);
       }
@@ -56,7 +54,6 @@ export default function ImportRecipeComponent(props: {
   }
 
   async function onOpenChange(open:boolean) {
-    console.log("Open change:" + open);
     props.onClose();
   }
 

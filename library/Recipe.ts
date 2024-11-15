@@ -209,7 +209,6 @@ class Recipe {
 
             }
         } catch (e) {
-            console.log("Error writing card:" + e);
             throw new Error("Error writing card: " + e);
         } finally {
             await nfc.close();
@@ -303,10 +302,8 @@ class Recipe {
     }
 
     private convertDataToXID(data: number[]): string {
-        console.log()
         let index = data.length - 1
         while (index >= 0) {
-            console.log("index:" + data[index]);
             if (data[index] !== 0) {
                 break;
             }
@@ -342,13 +339,10 @@ class Recipe {
         let numberOfPours = data[40] >> 3;
 
         this.suffixArray = data.slice(44 + (numberOfPours * 8), data.length);
-        console.log(this.convertNumberArrayToHex(this.prefixArray));
-        console.log(this.convertNumberArrayToHex(this.suffixArray));
-
+       
         this.grindSize = data[41 + (numberOfPours * 8)] + 40
         this.ratio = data[42 + (numberOfPours * 8)]
         this.checksum = data[43 + (numberOfPours * 8)]
-        console.log(this.checksum);
 
 
         let index = 41;

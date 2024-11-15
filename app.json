@@ -38,7 +38,15 @@
           "includeNdefEntitlement": false
         }
       ],
-      "expo-share-intent"
+      "expo-share-intent",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "dsb-ft"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

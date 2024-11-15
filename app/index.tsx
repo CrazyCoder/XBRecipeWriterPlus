@@ -1,4 +1,3 @@
-import NFC from "@/library/NFC";
 import Recipe from "@/library/Recipe";
 import RecipeDatabase from "@/library/RecipeDatabase";
 
@@ -15,9 +14,7 @@ import { H1, H6, Paragraph, ScrollView, YStack } from "tamagui";
 import RecipeItem from "@/components/RecipeItem";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 
-import { Animated } from "react-native";
 import { toast, ToastPosition, Toasts } from "@backpackapp-io/react-native-toast";
-import { XBloomRecipe } from "@/library/XBloomRecipe";
 import ImportRecipeComponent from "@/components/ImportRecipeComponent";
 import { useShareIntentContext } from "expo-share-intent";
 
@@ -35,7 +32,6 @@ export default function HomeScreen() {
   const navigation = useNavigation();
 
   const { hasShareIntent, shareIntent, error, resetShareIntent } = useShareIntentContext();
-  const receivedShareIntent = useRef(false);
 
 
 
@@ -64,15 +60,12 @@ export default function HomeScreen() {
       console.log("Share intent received:" + JSON.stringify(shareIntent));
 
       if (shareIntent.type == "weburl" && shareIntent.webUrl) {
-        console.log("Web URL: " + shareIntent.webUrl);
         let url = new URL(shareIntent.webUrl);
         if (url) {
           var id = url.searchParams.get("id");
-          console.log('XBloom ID: ' + id);
           if (id) {
             setShowImportRecipeDialog(true);
             setXBloomRecipeID(id);
-            console.log("XBloom ID: " + showImportRecipeDialog);
 
           }
         }
@@ -155,7 +148,6 @@ export default function HomeScreen() {
   }
 
   async function onCloseImportCallback(){
-    console.log("Close import callback");
     setShowImportRecipeDialog(false);
     setXBloomRecipeID("");
    // resetShareIntent();

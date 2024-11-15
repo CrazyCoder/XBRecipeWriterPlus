@@ -41,7 +41,7 @@ class RecipeDatabase {
                 ]
             );
         } else {
-            console.log("Recipe already exists");
+            throw new Error("DB: Recipe already exists");
         }
     }
 

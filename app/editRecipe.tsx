@@ -179,9 +179,7 @@ export default function editRecipe() {
   }
 
   async function editInputComplete(label: string, value: string, pourNumber?: number) {
-    console.log("Edit complete:" + label);
-    console.log("Pour Number:" + pourNumber);
-    console.log(label + ":" + value);
+
     var recipe = getRecipe();
     if (recipe !== null) {
 
@@ -284,7 +282,7 @@ export default function editRecipe() {
           }
           return;
         default:
-          console.log("Unknown field");
+          throw new Error("Unknown Edit Recipe Input field");
       }
     }
   }
@@ -298,7 +296,6 @@ export default function editRecipe() {
             <ScrollView padding="$4" >
               <YStack maxWidth={600}>
                 <XStack><LabeledInput setErrorFunction={setInputError} width={290} maxLength={23} initialValue={getRecipe()!.title} label="Title" onValidEditFunction={editInputComplete} validateInput={(data) => {
-                  console.log("Title:" + data);
                   if (data.length > 0) {
                     return true;
                   }
