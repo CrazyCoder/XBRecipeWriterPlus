@@ -1,16 +1,12 @@
 import Recipe from "@/library/Recipe";
 import RecipeDatabase from "@/library/RecipeDatabase";
 
-import { Divider, Icon, IconElement, Layout, Text, TopNavigation, TopNavigationAction } from "@ui-kitten/components";
-import { Link, useNavigation, useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
-import { Alert, Button, Platform, Pressable, TouchableOpacity } from "react-native";
-import Ionicons from '@expo/vector-icons/Ionicons';
-import AntDesign from '@expo/vector-icons/AntDesign';
-import { router } from 'expo-router';
-import { MySafeAreaView } from "@/components/MySafeAreaView";
-import { MyStack } from "@/components/MyStack";
-import { H1, H6, Paragraph, ScrollView, YStack } from "tamagui";
+import { IconElement } from "@ui-kitten/components";
+import {useNavigation, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { Alert,  Platform, Pressable } from "react-native";
+
+import { ScrollView, YStack } from "tamagui";
 import RecipeItem from "@/components/RecipeItem";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 
@@ -19,6 +15,7 @@ import ImportRecipeComponent from "@/components/ImportRecipeComponent";
 import { useShareIntentContext } from "expo-share-intent";
 import AndroidNFCDialog from "@/components/AndroidNFCDialog";
 import NFC from "@/library/NFC";
+import Svg, { Path } from "react-native-svg";
 
 
 
@@ -39,6 +36,14 @@ export default function HomeScreen() {
   const { hasShareIntent, shareIntent, error, resetShareIntent } = useShareIntentContext();
 
 
+
+  function readCardIcon() {
+    return (
+      <Svg width="40" height="35" viewBox="0 0 24 24" fill="none">
+        <Path d="M2 8.5H14.5M6 16.5H8M10.5 16.5H14.5M22 14.03V16.11C22 19.62 21.11 20.5 17.56 20.5H6.44C2.89 20.5 2 19.62 2 16.11V7.89C2 4.38 2.89 3.5 6.44 3.5H14.5M20 3.5V9.5M20 9.5L22 7.5M20 9.5L18 7.5" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+      </Svg>
+    )
+  }
 
 
 
@@ -117,8 +122,8 @@ export default function HomeScreen() {
     navigation.setOptions({
       title: 'Recipes',
       headerShown: true,
-      headerRight: () => <IconButton onPress={() => readCard()} title="" icon={<AntDesign name="download" size={24} color="black" />
-      }></IconButton>,
+      headerRight: () => <IconButton onPress={() => readCard()} title="" icon={readCardIcon()} />
+      ,
 
     })
   }, [navigation]);

@@ -34,6 +34,18 @@
           "includeNdefEntitlement": false
         }
       ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "black",
+          "image": "./assets/images/icon.png",
+          "dark": {
+            "image": "./assets/images/icon.png",
+            "backgroundColor": "black"
+          },
+          "imageWidth": 200
+        }
+      ],
       "expo-share-intent",
       [
         "@sentry/react-native/expo",
@@ -42,18 +54,8 @@
           "project": "react-native",
           "organization": "dsb-ft"
         }
-      ],[
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#000000",
-          "image": "./assets/images/icon.png",
-          "dark": {
-            "image": "./assets/images/icon.png",
-            "backgroundColor": "#000000"
-          },
-          "imageWidth": 200
-        }
       ]
+
     ],
     "experiments": {
       "typedRoutes": true

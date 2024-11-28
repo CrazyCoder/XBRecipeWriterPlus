@@ -17,6 +17,7 @@ import TooltipComponent from "@/components/TooltipComponent";
 import { toast } from "@backpackapp-io/react-native-toast";
 import AndroidNFCDialog from "@/components/AndroidNFCDialog";
 import NFC from "@/library/NFC";
+import Svg, { Path } from "react-native-svg";
 
 //const recipeJSON = "{\"title\":\"\",\"xid\":\"VER009\",\"ratio\":16,\"grindSize\":64,\"grindRPM\":120,\"pours\":[{\"pourNumber\":1,\"volume\":45,\"temperature\":95,\"flowRate\":30,\"agitation\":2,\"pourPattern\":2,\"pauseTime\":30},{\"pourNumber\":2,\"volume\":50,\"temperature\":94,\"flowRate\":35,\"agitation\":2,\"pourPattern\":2,\"pauseTime\":15},{\"pourNumber\":3,\"volume\":50,\"temperature\":93,\"flowRate\":35,\"agitation\":0,\"pourPattern\":2,\"pauseTime\":12},{\"pourNumber\":4,\"volume\":50,\"temperature\":93,\"flowRate\":35,\"agitation\":2,\"pourPattern\":1,\"pauseTime\":15},{\"pourNumber\":5,\"volume\":45,\"temperature\":92,\"flowRate\":35,\"agitation\":2,\"pourPattern\":1,\"pauseTime\":256}],\"prefixArray\":[249,24,80,207,4,14,81,85,240,235,57,87,169,254,224,164,137,252,56,196,242,173,180,175,25,224,148,168,125,239,237,40],\"suffixArray\":[24,16,237,0,244,0,0,35,25,17,130,0,251,0,0,35,23,15,97,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}";
 
@@ -42,6 +43,14 @@ export default function editRecipe() {
     title: string;
     onPress: () => void;
     icon: IconElement;
+  }
+
+  function writeCardIcon() {
+    return (
+      <Svg width="40" height="35" viewBox="0 0 24 24" fill="none">
+        <Path d="M2,8.5h12.5M6,16.5h2M10.5,16.5h4M22,14.03v2.08c0,3.51-.89,4.39-4.44,4.39H6.44c-3.55,0-4.44-.88-4.44-4.39V7.89c0-3.51.89-4.39,4.44-4.39h8.06M20,9.5V3.5M20,3.5l-2,2M20,3.5l2,2" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"  />
+      </Svg>
+    )
   }
 
 
@@ -81,8 +90,7 @@ export default function editRecipe() {
     navigation.setOptions({
       title: 'Edit Recipe',
       headerShown: true,
-      headerRight: () => <IconButton onPress={() => writeCard()} title="" icon={<AntDesign name="upload" size={24} color="black" />
-      }></IconButton>,
+      headerRight: () => <IconButton onPress={() => writeCard()} title="" icon={writeCardIcon()} />
     })
   }, [navigation, recipeInJSON]);
 
