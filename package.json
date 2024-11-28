@@ -19,6 +19,7 @@
     "@backpackapp-io/react-native-toast": "^0.11.0",
     "@eva-design/eva": "^2.2.0",
     "@expo/vector-icons": "^14.0.2",
+    "@react-native-community/progress-bar-android": "^1.0.5",
     "@react-navigation/native": "^6.0.2",
     "@sentry/react-native": "^5.35.0",
     "@tamagui/config": "^1.115.5",

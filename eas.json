@@ -7,15 +7,27 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "development"
+      "channel": "development",
+      "env": {
+            "ANDROID_SDK_ROOT": "/Users/danielblock/Library/Android/sdk/"
+        }
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview"
+      "channel": "preview",
+      "env": {
+            "ANDROID_SDK_ROOT": "/Users/danielblock/Library/Android/sdk/"
+        }
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "env": {
+            "ANDROID_SDK_ROOT": "/Users/danielblock/Library/Android/sdk/"
+        },
+        "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {

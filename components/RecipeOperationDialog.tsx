@@ -1,5 +1,6 @@
 
 import RecipeDatabase from '@/library/RecipeDatabase';
+import { useEffect, useState } from 'react';
 import type { PopoverProps } from 'tamagui'
 import { Adapt, Button, Input, Label, Popover, XStack, YStack } from 'tamagui'
 
@@ -14,14 +15,21 @@ export function RecipeOperationDialog({
   }: PopoverProps & { showDialog:boolean, Name?: string; shouldAdapt?: boolean, rerenderFunction: () => void
   }) {
 
+    const [showPopover, setShowPopover] = useState(showDialog);
+
+    useEffect(() => {
+      setShowPopover(showDialog);
+    }, [showDialog])
+    
     function onOpenChange(open: boolean){
+      console.log("test");
       if(!open){
         rerenderFunction();
       }
     }
 
     return (
-      <Popover  size="$1" allowFlip {...props} open={showDialog} onOpenChange={(open)=>onOpenChange(open)}>
+      <Popover  size="$1" allowFlip {...props} open={showPopover} onOpenChange={(open)=>onOpenChange(open)}>
      
   
         {shouldAdapt && (
@@ -58,31 +66,29 @@ export function RecipeOperationDialog({
           <Popover.Arrow  borderWidth={1} borderColor="$colorTransparent" />
   
           <YStack backgroundColor="white" borderRadius={20}>
-          <Popover.Close asChild>
               <Button
                 size="$3"
                 onPress={() => {
                     var db = new RecipeDatabase();
                     db.cloneRecipe(Name!);
-                    //rerenderFunction();
+                    setShowPopover(false);
+                    rerenderFunction();
                 }}
               >
                 Duplicate
               </Button>
-            </Popover.Close>
   
-            <Popover.Close asChild>
               <Button
                 size="$3"
                 onPress={() => {
                   var db = new RecipeDatabase();
                   db.deleteRecipe(Name!);
-                  //rerenderFunction();
+                  setShowPopover(false);
+                  rerenderFunction();
                 }}
               >
                 Delete
               </Button>
-            </Popover.Close>
           </YStack>
         </Popover.Content>
       </Popover>

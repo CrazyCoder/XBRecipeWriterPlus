@@ -191,9 +191,8 @@ class Recipe {
         return crc ^ 0x00; // Final XOR value (reflected output)
     }
 
-    public async writeCard(toastID?: string) {
+    public async writeCard(nfc: NFC, progressCallBack: (progress: number, id?: string) => Promise<string | undefined>) {
         console.log("Writing Card");
-        var nfc = new NFC();
         try {
             await nfc.init();
             await nfc.open();
@@ -205,39 +204,47 @@ class Recipe {
                 console.log(this.convertNumberArrayToHex(data));
                 //        var data = [249,24,80,207,4,14,81,85,240,235,57,87,169,254,224,164,137,252,56,196,242,173,180,175,25,224,148,168,125,239,237,40,86,69,82,48,48,57,0,0,40,45,95,2,2,226,0,0,30,50,94,2,2,241,0,0,35,50,93,2,0,244,0,0,35,50,93,1,2,241,0,0,35,45,92,1,2,0,0,0,35,24,16,237,0,244,0,0,35,25,17,130,0,251,0,0,35,23,15,97,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 
-                await nfc.writeCard(data, toastID);
+                await nfc.writeCard(data, progressCallBack);
 
             }
         } catch (e) {
-            throw new Error("Error writing card: " + e);
+            if (!nfc.getIsClosed()) { //make sure NFC reading wasn't closed by user --really just an android problem
+                throw new Error("Error writing card: " + e);
+            }
         } finally {
             await nfc.close();
         }
     }
 
-    public async readCard() {
+
+    public async readCard(nfc: NFC,progressCallBack: (progress: number, id?: string) => Promise<string | undefined>): Promise<boolean> {
         console.log('Read Card')
-        var nfc = new NFC();
         try {
             await nfc.init();
             await nfc.open();
-            var data = await nfc.readCard();
+            await progressCallBack(20)
+            var data = await nfc.readCard(progressCallBack);
+            await progressCallBack(90)
             await nfc.close();
+            await progressCallBack(100)
             if (data) {
                 console.log(nfc.convertNumberArrayToHex(data));
 
                 this.parseData(data);
 
                 console.log(this.toString());
+                return true;
             } else {
                 throw new Error("No data read from card");
             }
         } catch (e) {
-            console.log("Error reading card:" + e);
-            throw new Error("Error reading card: " + e);
+            if (!nfc.getIsClosed()) {
+                throw new Error("Error reading card: " + e);
+            }
         } finally {
             await nfc.close();
         }
+        return false;
     }
 
     public getData(prefix: number[]): number[] {
@@ -248,6 +255,7 @@ class Recipe {
         } else {
             data = data.concat(this.prefixArray);
         }
+        console.log("Prefix:" + this.convertNumberArrayToHex(data));
 
         data = data.concat(this.convertXIDToData(this.xid));
         data.push(this.pours.length << 3);
@@ -271,7 +279,7 @@ class Recipe {
         console.log("CheckSum:" + this.convertNumberArrayToHex(data));
         console.log("CheckSum:" + checkSum + ":" + this.checksum);
         data.push(checkSum);
-        
+
         data.push(0x00);
         data.push(0x00); //this is usually F4 (but not always), but it doesn't seem to matter 
 
@@ -339,7 +347,7 @@ class Recipe {
         let numberOfPours = data[40] >> 3;
 
         this.suffixArray = data.slice(44 + (numberOfPours * 8), data.length);
-       
+
         this.grindSize = data[41 + (numberOfPours * 8)] + 40
         this.ratio = data[42 + (numberOfPours * 8)]
         this.checksum = data[43 + (numberOfPours * 8)]

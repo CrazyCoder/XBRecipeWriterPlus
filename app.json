@@ -2,15 +2,11 @@
   "expo": {
     "name": "XBRecipeWriter",
     "slug": "XBRecipeWriter",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "cover"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.terminaldisclaimer.XBRecipeWriter"
@@ -18,7 +14,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#000000"
       },
       "permissions": [
         "android.permission.NFC"
@@ -45,6 +41,17 @@
           "url": "https://sentry.io/",
           "project": "react-native",
           "organization": "dsb-ft"
+        }
+      ],[
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#000000",
+          "image": "./assets/images/icon.png",
+          "dark": {
+            "image": "./assets/images/icon.png",
+            "backgroundColor": "#000000"
+          },
+          "imageWidth": 200
         }
       ]
     ],

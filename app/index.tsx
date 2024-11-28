@@ -4,7 +4,7 @@ import RecipeDatabase from "@/library/RecipeDatabase";
 import { Divider, Icon, IconElement, Layout, Text, TopNavigation, TopNavigationAction } from "@ui-kitten/components";
 import { Link, useNavigation, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Button, Pressable, TouchableOpacity } from "react-native";
+import { Alert, Button, Platform, Pressable, TouchableOpacity } from "react-native";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { router } from 'expo-router';
@@ -17,6 +17,8 @@ import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { toast, ToastPosition, Toasts } from "@backpackapp-io/react-native-toast";
 import ImportRecipeComponent from "@/components/ImportRecipeComponent";
 import { useShareIntentContext } from "expo-share-intent";
+import AndroidNFCDialog from "@/components/AndroidNFCDialog";
+import NFC from "@/library/NFC";
 
 
 
@@ -24,12 +26,15 @@ import { useShareIntentContext } from "expo-share-intent";
 
 export default function HomeScreen() {
   const [recipesJSON, setRecipesJSON] = useState<string>("");
+  const [showAndroidNFCDialog, setShowAndroidNFCDialog] = useState(false);
   const [showImportRecipeDialog, setShowImportRecipeDialog] = useState(false);
+  const [readProgress, setReadProgress] = useState(0);
   const [xbloomRecipeID, setXBloomRecipeID] = useState<string>("");
   const [key, setKey] = useState(0);
   const router = useRouter();
   const db = new RecipeDatabase();
   const navigation = useNavigation();
+  const nfc = new NFC();
 
   const { hasShareIntent, shareIntent, error, resetShareIntent } = useShareIntentContext();
 
@@ -105,7 +110,7 @@ export default function HomeScreen() {
     </Pressable>
   );
 
-  
+
 
   useEffect(() => {
 
@@ -119,25 +124,44 @@ export default function HomeScreen() {
   }, [navigation]);
 
 
+  async function onNFCDialogClose() {
+    await nfc.close();
+    setShowAndroidNFCDialog(false);
+  }
+
+  async function progressCallback(progress: number): Promise<string | undefined> {
+    setReadProgress(progress);
+    return undefined;
+  }
 
   async function readCard() {
+    setShowAndroidNFCDialog(true);
+    setReadProgress(0);
     try {
       console.log('Read Card')
       var recipe = new Recipe();
       //toast("Hold your phone near the NFC tag");
-      await recipe.readCard();
-      toast("Recipe read successfully", {
-        duration: 4000,
-        position: ToastPosition.TOP,
-        styles: {
-          view: { backgroundColor: 'green' },
-        }
-      });
+      var success = await recipe.readCard(nfc, progressCallback);
 
-      //reenable
-      router.push({ pathname: '/editRecipe', params: { recipeJSON: JSON.stringify(recipe) } });
+      if (success) {
+        if (Platform.OS === "ios") {
+          toast("Recipe read successfully", {
+            duration: 4000,
+            position: ToastPosition.TOP,
+            styles: {
+              view: { backgroundColor: 'green' },
+            }
+          });
+        }
+        setShowAndroidNFCDialog(false);
+
+
+        //reenable
+        router.push({ pathname: '/editRecipe', params: { recipeJSON: JSON.stringify(recipe) } });
+      }
     } catch (e) {
       console.log(e);
+      setShowAndroidNFCDialog(false);
       Alert.alert("Error", "Could not read card. Please try again.");
     }
 
@@ -147,10 +171,10 @@ export default function HomeScreen() {
     setKey((prev) => prev + 1);
   }
 
-  async function onCloseImportCallback(){
+  async function onCloseImportCallback() {
     setShowImportRecipeDialog(false);
     setXBloomRecipeID("");
-   // resetShareIntent();
+    // resetShareIntent();
   }
 
   return (
@@ -169,9 +193,10 @@ export default function HomeScreen() {
               )
             }) : ""}
         </YStack>
-        {showImportRecipeDialog ? <ImportRecipeComponent recipeId={xbloomRecipeID} onClose={()=>onCloseImportCallback()} /> : ""}
-      </ScrollView>
+        {showImportRecipeDialog ? <ImportRecipeComponent recipeId={xbloomRecipeID} onClose={() => onCloseImportCallback()} /> : ""}
+        {Platform.OS !== "ios" && showAndroidNFCDialog ? <AndroidNFCDialog onClose={() => onNFCDialogClose()} progress={readProgress}></AndroidNFCDialog> : ""}
 
+      </ScrollView>
     </>
   )
 }

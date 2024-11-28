@@ -6,14 +6,17 @@ import { AntDesign } from "@expo/vector-icons";
 import { Icon, IconElement } from "@ui-kitten/components";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable } from "react-native";
+import { Alert, Platform, Pressable } from "react-native";
 
-import { YStack, H6, XStack, ScrollView, Button } from "tamagui";
+import { YStack, H6, XStack, ScrollView, Button, Progress } from "tamagui";
 import OnOffButtonGroup from "@/components/OnOffButtonGroup";
 import LabeledInput from "@/components/LabeledInput";
 import RecipeDatabase from "@/library/RecipeDatabase";
 import TotalVolumeComponent from "@/components/TotalVolumeComponent";
 import TooltipComponent from "@/components/TooltipComponent";
+import { toast } from "@backpackapp-io/react-native-toast";
+import AndroidNFCDialog from "@/components/AndroidNFCDialog";
+import NFC from "@/library/NFC";
 
 //const recipeJSON = "{\"title\":\"\",\"xid\":\"VER009\",\"ratio\":16,\"grindSize\":64,\"grindRPM\":120,\"pours\":[{\"pourNumber\":1,\"volume\":45,\"temperature\":95,\"flowRate\":30,\"agitation\":2,\"pourPattern\":2,\"pauseTime\":30},{\"pourNumber\":2,\"volume\":50,\"temperature\":94,\"flowRate\":35,\"agitation\":2,\"pourPattern\":2,\"pauseTime\":15},{\"pourNumber\":3,\"volume\":50,\"temperature\":93,\"flowRate\":35,\"agitation\":0,\"pourPattern\":2,\"pauseTime\":12},{\"pourNumber\":4,\"volume\":50,\"temperature\":93,\"flowRate\":35,\"agitation\":2,\"pourPattern\":1,\"pauseTime\":15},{\"pourNumber\":5,\"volume\":45,\"temperature\":92,\"flowRate\":35,\"agitation\":2,\"pourPattern\":1,\"pauseTime\":256}],\"prefixArray\":[249,24,80,207,4,14,81,85,240,235,57,87,169,254,224,164,137,252,56,196,242,173,180,175,25,224,148,168,125,239,237,40],\"suffixArray\":[24,16,237,0,244,0,0,35,25,17,130,0,251,0,0,35,23,15,97,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}";
 
@@ -23,11 +26,15 @@ export default function editRecipe() {
   var { recipeJSON, saveEnabled } = useLocalSearchParams()
   const [recipeInJSON, setRecipeInJSON] = useState<string>("");
   const [inputError, setInputError] = useState(false);
+  const [titleChanged, setTitleChanged] = useState(false);
   const [enableSave, setEnableSave] = useState(saveEnabled && saveEnabled === "true");
   const [enableMachineRatio, setEnableMachineRatio] = useState(false);
+  const [writeProgress, setWriteProgress] = useState(0);
+  const [showAndroidNFCDialog, setShowAndroidNFCDialog] = useState(false);
   const [key, setKey] = useState(0);
 
 
+  const nfc = new NFC();
 
   const navigation = useNavigation();
 
@@ -80,9 +87,35 @@ export default function editRecipe() {
   }, [navigation, recipeInJSON]);
 
 
+  async function onNFCDialogClose() {
+    await nfc.close();
+    setShowAndroidNFCDialog(false);
+  }
 
+  async function progressCallback(progress: number, id?: string): Promise<string | undefined> {
+    console.log("Progress:" + progress);
 
-
+    if (Platform.OS === "ios") {
+      if (id && progress === 100) {
+        toast("Writing Recipe to Card: 100%", {
+          id: id, styles: {
+            view: { backgroundColor: 'green' },
+          }
+        });
+      } else {
+        if (id) {
+          toast("Writing Recipe to Card: " + Math.round(progress) + "%", { id: id });
+          return id;
+        } else {
+          const new_id = toast("Writing Recipe to Card: " + Math.round(progress) + "%");
+          return new_id;
+        }
+      }
+    } else {
+      setWriteProgress(progress);
+    }
+    return undefined;
+  }
 
 
   async function writeCard() {
@@ -93,7 +126,14 @@ export default function editRecipe() {
         console.log(r);
         if (r.isPourVolumeValid()) {
           //const id = toast("Writing Recipe to Card: 0");
-          await r.writeCard();
+          if (Platform.OS !== "ios") {
+            setWriteProgress(0);
+            setShowAndroidNFCDialog(true);
+          }
+          await r.writeCard(nfc, progressCallback);
+          if (Platform.OS !== "ios") {
+            setShowAndroidNFCDialog(false);
+          }
         } else {
           Alert.alert('Pour Volume Error', 'Your individual pour volumes must add up to the total volume', [
             {
@@ -105,6 +145,7 @@ export default function editRecipe() {
       }
     } catch (e) {
       console.log("Write error!:" + e);
+      setShowAndroidNFCDialog(false);
       Alert.alert('Write Error', 'There was an error writing the recipe to the card');
     }
   }
@@ -156,16 +197,23 @@ export default function editRecipe() {
     var db = new RecipeDatabase();
     var recipe = getRecipe()!;
     if (recipe.isPourVolumeValid()) {
-      if(!db.doesTitleExist(recipe.title)) {
-      db.updateRecipe(recipe.uuid, recipe);
-      navigation.goBack();
+      if (titleChanged && db.doesTitleExist(recipe.title)) {
+        var r = db.getRecipe(recipe.uuid)
+        //if the changed title matches the title of a duplicate recipe that has the same uuid. Then we hit an edge case where the user modified the title, but then changed back to what it was originally.
+        if (r?.title === recipe.title) {
+          db.updateRecipe(recipe.uuid, recipe);
+          navigation.goBack();
+        }else{
+          Alert.alert('Save Error', 'The title of \"' + recipe.title + "\" already exists. Please choose a different name", [
+            {
+              text: 'Ok',
+              onPress: () => console.log('Cancel Pressed'),
+            },
+          ]);
+        }
       } else {
-        Alert.alert('Save Error', 'The title of \"' + recipe.title + "\" already exists. Please choose a different name", [
-          {
-            text: 'Ok',
-            onPress: () => console.log('Cancel Pressed'),
-          },
-        ]);
+        db.updateRecipe(recipe.uuid, recipe);
+        navigation.goBack();
       }
     } else {
       Alert.alert('Pour Volume Error', 'Your individual pour volumes must add up to the total volume', [
@@ -228,6 +276,7 @@ export default function editRecipe() {
           return;
         case "Title":
           recipe!.title = value;
+          setTitleChanged(true);
           setEnableSave(true);
           setRecipeInJSON(JSON.stringify(recipe));
           return;
@@ -301,7 +350,7 @@ export default function editRecipe() {
                   }
                   return false;
                 }} errorMessage="You must have a title" />
-                <TooltipComponent paddingLeft="$2" content="This is the title of the recipe for use in this app only. It is never stored on the card. So that's why this field is blank when you've just read in a card" />
+                  <TooltipComponent paddingLeft="$2" content="This is the title of the recipe for use in this app only. It is never stored on the card. So that's why this field is blank when you've just read in a card" />
 
                 </XStack>
                 <XStack>
@@ -360,6 +409,7 @@ export default function editRecipe() {
           <XStack paddingVertical="$3" justifyContent="center" alignContent="center" alignItems="center" >
             <Button onPress={() => saveRecipe()} width={200} fontSize={16} fontWeight={700} disabled={inputError || !enableSave} color="white" backgroundColor={inputError || !enableSave ? "#f59d7d" : "#f4511e"}>Save</Button>
           </XStack>
+          {Platform.OS !== "ios" && showAndroidNFCDialog ? <AndroidNFCDialog onClose={() => onNFCDialogClose()} progress={writeProgress}></AndroidNFCDialog> : ""}
         </YStack>
         : ""}
 
