@@ -55,9 +55,11 @@ export class XBloomRecipe {
 
 
 
-
-
-            let xid = this.xbRecipeJSON.recipeVo.podsVo.id;
+            let xid = "";
+            if (this.xbRecipeJSON.recipeVo.podsVo) {
+                let xid = this.xbRecipeJSON.recipeVo.podsVo.id;
+            }
+            
             recipe.setRatio(ratio);
             recipe.setDosage(dosage);
             recipe.title = title;
@@ -129,13 +131,17 @@ export class XBloomRecipe {
         if (data) {
             //var test = JSON.parse(data.trim());
             this.xbRecipeJSON = JSON.parse(JSON.stringify(data));
-            console.log(this.xbRecipeJSON);
+            console.log(JSON.stringify(this.xbRecipeJSON));
             this.name = this.xbRecipeJSON.recipeVo.theName;
-            this.subtitle = this.xbRecipeJSON.recipeVo.podsVo.subtitle;
+            if (this.xbRecipeJSON.recipeVo.podsVo) {
+                this.subtitle = this.xbRecipeJSON.recipeVo.podsVo.subtitle;
 
-            this.imageURL = this.xbRecipeJSON.recipeVo.podsVo.imagePath;
-            console.log(this.name);
-            console.log(this.imageURL)
+                this.imageURL = this.xbRecipeJSON.recipeVo.podsVo.imagePath;
+                console.log(this.name);
+                console.log(this.imageURL)
+            } else {
+                this.subtitle = "";
+            }
         }
         return data;
     }

@@ -1,12 +1,12 @@
 import { XBloomRecipe } from '@/library/XBloomRecipe';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { Image } from 'react-native';
 import {
   Adapt,
   Button,
   Dialog,
   Fieldset,
-  Image,
   Input,
   Label,
   Paragraph,
@@ -32,9 +32,11 @@ export default function ImportRecipeComponent(props: {
 
   useEffect(() => {
     if (props.recipeId) {
+      console.log("Import REcipe component id:" + props.recipeId);
       var xbloom = new XBloomRecipe(props.recipeId);
       xbloom.fetchRecipeDetail().then(() => {
       if (xbloom) {
+        console.log("URL:" + xbloom.getImageURL());
         setXBloomRecipe(xbloom);
         setDisplayDialog(true);
       }
@@ -51,6 +53,7 @@ export default function ImportRecipeComponent(props: {
 
   async function onCancel() {
     setDisplayDialog(()=>false)
+    props.onClose();
   }
 
   async function onOpenChange(open:boolean) {
@@ -62,9 +65,10 @@ export default function ImportRecipeComponent(props: {
       <Dialog modal open={displayDialog} onOpenChange={(open) => onOpenChange(open)}>
 
 
-        <Adapt when="sm" platform="touch">
-          <Sheet zIndex={200000} modal dismissOnSnapToBottom>
-            <Sheet.Frame padding="$4" gap="$4">
+        <Adapt platform="touch">
+          <Sheet   snapPoints={[xBloomRecipe && xBloomRecipe.getImageURL() !== "" ? 55 : 30, 100]} // Adjust heights as necessary
+ zIndex={200000} modal dismissOnSnapToBottom>
+            <Sheet.Frame padding="$4" >
               <Adapt.Contents />
             </Sheet.Frame>
             <Sheet.Overlay
@@ -113,14 +117,10 @@ export default function ImportRecipeComponent(props: {
                 </Text>:""}
               </YStack>
             </Fieldset>
-            <Image
-              alignSelf='center'
-              source={{ width: 240, height: 240, uri: xBloomRecipe?.getImageURL() }}
-              width="50%"
-              height="25%"
-            />
+            {xBloomRecipe && xBloomRecipe.getImageURL() !=="" ? <Image style={{width:200, alignSelf:"center",height:200}} source={{ uri: xBloomRecipe?.getImageURL() }}/> :""}
 
-            <XStack justifyContent="space-between" gap="$4">
+
+            <XStack justifyContent="center" paddingTop="$7" gap="$7">
               <Button theme="active" aria-label="Close" onPress={() => onCancel()}>
                 Cancel
               </Button>
@@ -137,7 +137,9 @@ export default function ImportRecipeComponent(props: {
 
 
   {
-    return <DialogInstance />
+    return  (
+    <DialogInstance />
+  )
   }
 }
 

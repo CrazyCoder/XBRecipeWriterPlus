@@ -44,8 +44,8 @@ export default function ValidatedInput(props: Props) {
           return true;
         }
       }
-    }else{
-      setValue(()=>undefined);
+    } else {
+      setValue(() => undefined);
     }
     //setValue(()=>undefined);
     setValidated(false);
@@ -60,7 +60,7 @@ export default function ValidatedInput(props: Props) {
     return value !== undefined ? "" + value : "";
   }
 
- 
+
 
   async function onValueChange(value: number[]) {
     var validEdit = await validate(value[0].toString());
@@ -80,23 +80,23 @@ export default function ValidatedInput(props: Props) {
   }
   return (
     <>
-      <YStack >
-        <XStack padding="$2" alignItems="center" alignSelf="flex-start" flex={1} space>
-          <Label>{props.label}</Label>
-          <Slider flex={1} onValueChange={onValueChange} value={value !== undefined && (value >= props.minimumValue && value <= props.maximumValue) ? [value] : [props.minimumValue]} min={props.minimumValue ? props.minimumValue : 0} max={props.maximumValue ? props.maximumValue : 100} step={props.step ? props.step : 1}>
-            <Slider.Track flex={1} borderWidth={1} borderColor="red">
-              <Slider.TrackActive />
-            </Slider.Track>
-            <Slider.Thumb size="$2" index={0} circular />
+        <YStack>
+          <XStack padding="$2" alignItems="center" alignSelf="flex-start" flex={1} space>
+            <Label>{props.label}</Label>
+            <Slider flex={1} onValueChange={onValueChange} value={value !== undefined && (value >= props.minimumValue && value <= props.maximumValue) ? [value] : [props.minimumValue]} min={props.minimumValue ? props.minimumValue : 0} max={props.maximumValue ? props.maximumValue : 100} step={props.step ? props.step : 1}>
+              <Slider.Track flex={1} borderWidth={1} borderColor="#ffa592" backgroundColor="#ffa592">
+                <Slider.TrackActive backgroundColor="#ff5c00" />
+              </Slider.Track >
+              <Slider.Thumb backgroundColor="#ff5c00" borderColor="#ffa592" size="$2" index={0} circular />
 
-          </Slider>
-          <Input padding="$2" value={getProcessedValue()}  onChangeText={(val) => validate(val)} focusStyle={{ borderColor: validated ? "gray" : "red" }} borderColor={validated ? "gray" : "red"} {...props}>
+            </Slider>
+            <Input padding="$2" value={getProcessedValue()} onChangeText={(val) => validate(val)} focusStyle={{ borderColor: validated ? "gray" : "red" }} borderColor={validated ? "gray" : "red"} {...props}>
 
-          </Input>
+            </Input>
 
-        </XStack>
-        {!validated ? <H6 fontWeight="600" color="red" padding="$2">{"Error: " + getErrorMessage()}</H6> : ""}
-      </YStack>
+          </XStack>
+          {!validated ? <H6 fontWeight="600" color="red" padding="$2">{"Error: " + getErrorMessage()}</H6> : ""}
+        </YStack>
     </>
   );
 }

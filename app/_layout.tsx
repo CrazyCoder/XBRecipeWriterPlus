@@ -10,10 +10,13 @@ import {  PortalProvider, TamaguiProvider, Text, Theme } from "tamagui";
 import config from '../tamagui.config' // your configuration
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Toasts } from '@backpackapp-io/react-native-toast';
+import { StatusBar } from 'expo-status-bar';
+
 
 import { ShareIntentProvider } from "expo-share-intent";
 import * as Sentry from '@sentry/react-native';
-import { captureConsoleIntegration } from "@sentry/integrations";
+
+
 
 
 Sentry.init({
@@ -87,8 +90,8 @@ function RootLayout() {
           >
             <SafeAreaProvider>
               <GestureHandlerRootView>
-              <PortalProvider>
-                <Stack
+              <PortalProvider shouldAddRootHost>
+                <Stack  
                   screenOptions={{
                     headerStyle: {
                       backgroundColor: '#f4511e',
@@ -100,8 +103,10 @@ function RootLayout() {
                   }}>
 
                   <Stack.Screen name="index" options={{}} />
+                  <Stack.Screen name="editRecipe" options={{title:"Edit Recipe"}} />
                 </Stack>
                 <Toasts />
+                <StatusBar hidden={false} />
                 </PortalProvider>
 
               </GestureHandlerRootView>

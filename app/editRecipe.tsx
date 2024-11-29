@@ -6,9 +6,9 @@ import { AntDesign } from "@expo/vector-icons";
 import { Icon, IconElement } from "@ui-kitten/components";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Platform, Pressable } from "react-native";
+import { Alert, Dimensions, Platform, Pressable, useColorScheme } from "react-native";
 
-import { YStack, H6, XStack, ScrollView, Button, Progress } from "tamagui";
+import { YStack, H6, XStack, ScrollView, Button, getTokens } from "tamagui";
 import OnOffButtonGroup from "@/components/OnOffButtonGroup";
 import LabeledInput from "@/components/LabeledInput";
 import RecipeDatabase from "@/library/RecipeDatabase";
@@ -18,6 +18,8 @@ import { toast } from "@backpackapp-io/react-native-toast";
 import AndroidNFCDialog from "@/components/AndroidNFCDialog";
 import NFC from "@/library/NFC";
 import Svg, { Path } from "react-native-svg";
+
+
 
 //const recipeJSON = "{\"title\":\"\",\"xid\":\"VER009\",\"ratio\":16,\"grindSize\":64,\"grindRPM\":120,\"pours\":[{\"pourNumber\":1,\"volume\":45,\"temperature\":95,\"flowRate\":30,\"agitation\":2,\"pourPattern\":2,\"pauseTime\":30},{\"pourNumber\":2,\"volume\":50,\"temperature\":94,\"flowRate\":35,\"agitation\":2,\"pourPattern\":2,\"pauseTime\":15},{\"pourNumber\":3,\"volume\":50,\"temperature\":93,\"flowRate\":35,\"agitation\":0,\"pourPattern\":2,\"pauseTime\":12},{\"pourNumber\":4,\"volume\":50,\"temperature\":93,\"flowRate\":35,\"agitation\":2,\"pourPattern\":1,\"pauseTime\":15},{\"pourNumber\":5,\"volume\":45,\"temperature\":92,\"flowRate\":35,\"agitation\":2,\"pourPattern\":1,\"pauseTime\":256}],\"prefixArray\":[249,24,80,207,4,14,81,85,240,235,57,87,169,254,224,164,137,252,56,196,242,173,180,175,25,224,148,168,125,239,237,40],\"suffixArray\":[24,16,237,0,244,0,0,35,25,17,130,0,251,0,0,35,23,15,97,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}";
 
@@ -38,6 +40,21 @@ export default function editRecipe() {
   const nfc = new NFC();
 
   const navigation = useNavigation();
+  const width = Dimensions.get('screen').width;
+  const colorScheme = useColorScheme();
+
+
+
+  useEffect(() => {
+
+    //setRecipe(()=>r)
+
+    navigation.setOptions({
+      title: 'Edit Recipe',
+      headerShown: true,
+      headerRight: () => <IconButton onPress={() => writeCard()} title="" icon={writeCardIcon()} />
+    })
+  }, [navigation, recipeInJSON]);
 
   type IconProps = {
     title: string;
@@ -48,7 +65,7 @@ export default function editRecipe() {
   function writeCardIcon() {
     return (
       <Svg width="40" height="35" viewBox="0 0 24 24" fill="none">
-        <Path d="M2,8.5h12.5M6,16.5h2M10.5,16.5h4M22,14.03v2.08c0,3.51-.89,4.39-4.44,4.39H6.44c-3.55,0-4.44-.88-4.44-4.39V7.89c0-3.51.89-4.39,4.44-4.39h8.06M20,9.5V3.5M20,3.5l-2,2M20,3.5l2,2" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"  />
+        <Path d="M2,8.5h12.5M6,16.5h2M10.5,16.5h4M22,14.03v2.08c0,3.51-.89,4.39-4.44,4.39H6.44c-3.55,0-4.44-.88-4.44-4.39V7.89c0-3.51.89-4.39,4.44-4.39h8.06M20,9.5V3.5M20,3.5l-2,2M20,3.5l2,2" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
       </Svg>
     )
   }
@@ -83,16 +100,7 @@ export default function editRecipe() {
   }, [recipeInJSON]);
 
 
-  useEffect(() => {
 
-    //setRecipe(()=>r)
-
-    navigation.setOptions({
-      title: 'Edit Recipe',
-      headerShown: true,
-      headerRight: () => <IconButton onPress={() => writeCard()} title="" icon={writeCardIcon()} />
-    })
-  }, [navigation, recipeInJSON]);
 
 
   async function onNFCDialogClose() {
@@ -187,6 +195,17 @@ export default function editRecipe() {
     }
   }
 
+  function autoAdjustPourVolumes(
+  ){
+    var r = getRecipe();
+    if (r) {
+      r.autoFixPourVolumes();
+      setRecipeInJSON(() => JSON.stringify(r));
+      setKey((prev) => prev + 1);
+     // return roundedPours;
+    }
+  }
+
   function addPour(pourNumber: number) {
 
     var r = getRecipe();
@@ -211,7 +230,7 @@ export default function editRecipe() {
         if (r?.title === recipe.title) {
           db.updateRecipe(recipe.uuid, recipe);
           navigation.goBack();
-        }else{
+        } else {
           Alert.alert('Save Error', 'The title of \"' + recipe.title + "\" already exists. Please choose a different name", [
             {
               text: 'Ok',
@@ -350,7 +369,7 @@ export default function editRecipe() {
         <YStack key={key} >
 
           <XStack maxHeight="90%">
-            <ScrollView padding="$4" >
+            <ScrollView showsVerticalScrollIndicator={false} margin="$2" >
               <YStack maxWidth={600}>
                 <XStack><LabeledInput setErrorFunction={setInputError} width={290} maxLength={23} initialValue={getRecipe()!.title} label="Title" onValidEditFunction={editInputComplete} validateInput={(data) => {
                   if (data.length > 0) {
@@ -366,8 +385,8 @@ export default function editRecipe() {
                   <TooltipComponent content="This is a 9 character unique identifier for the recipe that is used by the mobile app to look up the recipe online. It can be any alphanumeric value. Importantly, if you don't want the mobile app to show the wrong recipe, I'd probably change this. But if you do that, it won't show any recipe at all in the app (although it should still work on the machine) " />
                 </XStack>
                 <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.getDosage()} minimumValue={10} maximumValue={25} step={1} label="Dosage (g)" maxLength={2} inputMode="numeric" onValidEditFunction={editInputComplete} />
-                <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.grindSize} minimumValue={1} maximumValue={80} step={1} label="Grind Size" maxLength={2} inputMode="numeric" onValidEditFunction={editInputComplete} />
-                <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.grindRPM} minimumValue={60} maximumValue={120} step={10} label="Grind RPM" maxLength={3} inputMode="numeric" onValidEditFunction={editInputComplete} />
+                <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.grindSize} minimumValue={40} maximumValue={99} step={1} label="Grind Size" maxLength={2} inputMode="numeric" onValidEditFunction={editInputComplete} />
+                {/* <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.grindRPM} minimumValue={60} maximumValue={120} step={10} label="Grind RPM" maxLength={3} inputMode="numeric" onValidEditFunction={editInputComplete} /> */}
                 <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.getRatio()} minimumValue={5} maximumValue={25} step={1} label="Ratio" maxLength={3} inputMode="numeric" onValidEditFunction={editInputComplete} />
                 {/* <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.ratio} minimumValue={5} maximumValue={25} step={1}  label="Ratio" maxLength={3} inputMode="numeric" onValidEditFunction={editInputComplete} /> */}
 
@@ -378,39 +397,43 @@ export default function editRecipe() {
                   </XStack>
                   : ""}
 
-
-                <XStack>
+                <XStack alignItems="center">
+                <XStack >
                   <TotalVolumeComponent recipe={getRecipe()!} />
                   <TooltipComponent content="This field shows the total of all of the pours vs the total volume based on your dosage and ratio. You may also be wondering, hey wait why does the total volume not equal my dosage multipled by my ratio? The short answer is because that's the way it has to be, so don't worry about it. The longer answer is that because the XBloom recipe cards can only natively support 15g this app has to do some math to support other dosage volumes. And because the recipe cards further support only whole number ratios, due to some math rounding the total volume might not equal what the total volume should be based on your ratio. It's essentially as close as it can get. But, and THIS IS IMPORTANT, this does not affect your recipe. Your ratio is still what you actually specified. I promise. In fact, to prove it--take the total volume in the app and devidee by 15. " />
                 </XStack>
+                <Button borderWidth={1} borderColor="gray" paddingHorizontal="$3" paddingVertical="$2" marginLeft="$3" marginVertical="$2" backgroundColor="#ff5c00" color="black" onPress={()=>autoAdjustPourVolumes()}>Auto</Button>
 
-                {getRecipe() ? getRecipe()!.pours.map((pour, index) => (
-                  <YStack key={index} space="$2.5" borderWidth={2} borderColor="gray" marginVertical="$2" borderRadius={10}>
-                    <YStack padding="$2">
-                      <XStack justifyContent="space-between">
-                        <H6 fontSize={20} fontWeight={700}>Pour {pour.getPourNumber()}</H6>
-                        <XStack paddingRight="$2">
+                </XStack>
+
+                <ScrollView showsHorizontalScrollIndicator={false} centerContent={true} horizontal pagingEnabled={true}>
+                  {getRecipe() ? getRecipe()!.pours.map((pour, index) => (
+                    <YStack width={width - getTokens().size["$2"].val} key={index} borderWidth={2} borderColor="gray" marginInline="$2" borderRadius={10}>
+                      <YStack padding="$2">
+                        <XStack justifyContent="space-between">
+                          <H6 fontSize={20} fontWeight={700}>Pour {pour.getPourNumber()}</H6>
                           <XStack paddingRight="$2">
-                            <IconButton onPress={() => deletePour(index)} title="" icon={<AntDesign name="closecircle" size={24} color="red" />}></IconButton>
+                            <XStack paddingRight="$2">
+                              <IconButton onPress={() => deletePour(index)} title="" icon={<AntDesign name="closecircle" size={24} color="red" />}></IconButton>
+                            </XStack>
+                            <IconButton onPress={() => addPour(index)} title="" icon={<AntDesign name="pluscircle" size={24} color="green" />}></IconButton>
                           </XStack>
-                          <IconButton onPress={() => addPour(index)} title="" icon={<AntDesign name="pluscircle" size={24} color="green" />}></IconButton>
                         </XStack>
-                      </XStack>
-                      <ValidatedInput setErrorFunction={setInputError} initialValue={pour.getVolume()} minimumValue={1} maximumValue={240} step={1} pourNumber={index} label="Volume" maxLength={3} inputMode="numeric" style={{ maxWidth: 100 }} onValidEditFunction={editInputComplete} />
+                        <ValidatedInput setErrorFunction={setInputError} initialValue={pour.getVolume()} minimumValue={1} maximumValue={240} step={1} pourNumber={index} label="Volume" maxLength={3} inputMode="numeric" style={{ maxWidth: 100 }} onValidEditFunction={editInputComplete} />
 
-                      <ValidatedInput setErrorFunction={setInputError} initialValue={pour.getTemperature()} minimumValue={39} maximumValue={95} step={1} pourNumber={index} label="Temperature (c)" maxLength={2} inputMode="numeric" onValidEditFunction={editInputComplete} />
+                        <ValidatedInput setErrorFunction={setInputError} initialValue={pour.getTemperature()} minimumValue={39} maximumValue={95} step={1} pourNumber={index} label="Temperature (c)" maxLength={2} inputMode="numeric" onValidEditFunction={editInputComplete} />
 
-                      <ValidatedInput setErrorFunction={setInputError} initialValue={pour.getFlowRate()} minimumValue={30} maximumValue={35} step={1} floatingPoint pourNumber={index} label="Flow Rate (ml)" maxLength={4} inputMode="decimal" onValidEditFunction={editInputComplete} />
+                        <ValidatedInput setErrorFunction={setInputError} initialValue={pour.getFlowRate()} minimumValue={30} maximumValue={35} step={1} floatingPoint pourNumber={index} label="Flow Rate (ml)" maxLength={4} inputMode="decimal" onValidEditFunction={editInputComplete} />
 
-                      <ValidatedInput setErrorFunction={setInputError} initialValue={pour.getPauseTime()} minimumValue={0} maximumValue={59} step={1} pourNumber={index} label="Pause Time (s)" maxLength={2} inputMode="numeric" onValidEditFunction={editInputComplete} />
+                        <ValidatedInput setErrorFunction={setInputError} initialValue={pour.getPauseTime()} minimumValue={0} maximumValue={59} step={1} pourNumber={index} label="Pause Time (s)" maxLength={2} inputMode="numeric" onValidEditFunction={editInputComplete} />
 
-                      <PatternButtonGroup initalValue={"" + pour.getPourPattern()} label="Pattern:" size="$4" orientation="horizontal" onToggle={(val) => editInputComplete("Pattern:", val, index)} />
-                      <OnOffButtonGroup initialValue={pour.getAgitationBefore() ? "1" : "0"} label="Agitation Before:" size="$4" orientation="horizontal" onToggle={(val) => updateAgitation(index, true, val)} />
-                      <OnOffButtonGroup initialValue={pour.getAgitationAfter() ? "1" : "0"} label="Agitation After:   " size="$4" orientation="horizontal" onToggle={(val) => updateAgitation(index, false, val)} />
+                        <PatternButtonGroup initalValue={"" + pour.getPourPattern()} label="Pattern:" size="$4" orientation="horizontal" onToggle={(val) => editInputComplete("Pattern:", val, index)} />
+                        <OnOffButtonGroup initialValue={pour.getAgitationBefore() ? "1" : "0"} label="Agitation Before:" size="$4" orientation="horizontal" onToggle={(val) => updateAgitation(index, true, val)} />
+                        <OnOffButtonGroup initialValue={pour.getAgitationAfter() ? "1" : "0"} label="Agitation After:   " size="$4" orientation="horizontal" onToggle={(val) => updateAgitation(index, false, val)} />
+                      </YStack>
                     </YStack>
-                  </YStack>
-                )) : ""}
-
+                  )) : ""}
+                </ScrollView>
               </YStack>
             </ScrollView>
           </XStack>

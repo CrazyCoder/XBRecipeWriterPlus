@@ -2,11 +2,11 @@ import Recipe from "@/library/Recipe";
 import RecipeDatabase from "@/library/RecipeDatabase";
 
 import { IconElement } from "@ui-kitten/components";
-import {useNavigation, useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Alert,  Platform, Pressable } from "react-native";
+import { Alert, Platform, Pressable,useColorScheme } from "react-native";
 
-import { ScrollView, YStack } from "tamagui";
+import { Button, ScrollView, Text, View, XStack, YStack } from "tamagui";
 import RecipeItem from "@/components/RecipeItem";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 
@@ -16,9 +16,12 @@ import { useShareIntentContext } from "expo-share-intent";
 import AndroidNFCDialog from "@/components/AndroidNFCDialog";
 import NFC from "@/library/NFC";
 import Svg, { Path } from "react-native-svg";
+import AntDesign from '@expo/vector-icons/AntDesign';
+import Feather from '@expo/vector-icons/Feather';
 
 
-
+// @ts-ignore-next-line
+import SwipeableFlatList from 'react-native-swipeable-list';
 
 
 export default function HomeScreen() {
@@ -26,14 +29,18 @@ export default function HomeScreen() {
   const [showAndroidNFCDialog, setShowAndroidNFCDialog] = useState(false);
   const [showImportRecipeDialog, setShowImportRecipeDialog] = useState(false);
   const [readProgress, setReadProgress] = useState(0);
-  const [xbloomRecipeID, setXBloomRecipeID] = useState<string>("");
+  const [xbloomRecipeID, setXBloomRecipeID] = useState<string | null>("");
+  const [bounceFirstRowOnMount, setBounceFirstRowOnMount] = useState(true);
   const [key, setKey] = useState(0);
   const router = useRouter();
   const db = new RecipeDatabase();
   const navigation = useNavigation();
+
   const nfc = new NFC();
 
   const { hasShareIntent, shareIntent, error, resetShareIntent } = useShareIntentContext();
+
+  const colorScheme = useColorScheme();
 
 
 
@@ -45,7 +52,16 @@ export default function HomeScreen() {
     )
   }
 
+  useEffect(() => {
 
+    navigation.setOptions({
+      title: 'Recipes',
+      headerShown: true,
+      headerRight: () => <IconButton onPress={() => readCard()} title="" icon={readCardIcon()} />
+      ,
+
+    })
+  }, [navigation]);
 
   //const isFocused = useIsFocused();
 
@@ -74,9 +90,11 @@ export default function HomeScreen() {
         if (url) {
           var id = url.searchParams.get("id");
           if (id) {
-            setShowImportRecipeDialog(true);
-            setXBloomRecipeID(id);
-
+            console.log("Showing import dialog for recipe id:" + id);
+            setShowImportRecipeDialog(() => true);
+            setXBloomRecipeID(() => id);
+            forceRefresh();
+            resetShareIntent();
           }
         }
       }
@@ -106,8 +124,11 @@ export default function HomeScreen() {
         recipes.push(new Recipe(undefined, JSON.stringify(recipeData[i])));
       }
     }
-    return recipes;
+    return recipes.sort((a: Recipe, b: Recipe) => a.title.localeCompare(b.title))
+      ;
   }
+
+
 
   const IconButton = (props: IconProps) => (
     <Pressable onPress={props.onPress}>
@@ -117,16 +138,7 @@ export default function HomeScreen() {
 
 
 
-  useEffect(() => {
 
-    navigation.setOptions({
-      title: 'Recipes',
-      headerShown: true,
-      headerRight: () => <IconButton onPress={() => readCard()} title="" icon={readCardIcon()} />
-      ,
-
-    })
-  }, [navigation]);
 
 
   async function onNFCDialogClose() {
@@ -173,35 +185,76 @@ export default function HomeScreen() {
   }
 
   function forceRefresh() {
+    setBounceFirstRowOnMount(false);
     setKey((prev) => prev + 1);
   }
 
   async function onCloseImportCallback() {
-    setShowImportRecipeDialog(false);
-    setXBloomRecipeID("");
-    // resetShareIntent();
+    console.log("Closing import dialog");
+    setShowImportRecipeDialog(() => false);
+    setXBloomRecipeID(() => "");
+    forceRefresh();      
+ 
+    //resetShareIntent();
+  }
+
+  interface RenderItemProps {
+    item: { recipe: Recipe };
+    recipe: Recipe;
+  }
+
+  function extractItemKey(item: Recipe) {
+    return item.key;
+  };
+
+  function deleteRecipe(recipe: Recipe) {
+    var db = new RecipeDatabase();
+    db.deleteRecipe(recipe.uuid);
+    forceRefresh();
+  }
+
+  function duplicateRecipe(recipe: Recipe) {
+    console.log("Duplicating recipe:" + recipe.title);
+    var db = new RecipeDatabase();
+    db.cloneRecipe(recipe.uuid);
+    forceRefresh();
   }
 
   return (
     <>
 
-      <ScrollView backgroundColor="#dddddd">
-        <YStack maxWidth={600} flexDirection="column" >
-          {recipesJSON ? getRecipes()
-            .sort((a: Recipe, b: Recipe) => a.title.localeCompare(b.title))
-            .map((recipe: Recipe, index) => {
-              return (
-                <RecipeItem rerenderFunction={forceRefresh} key={index} recipe={recipe} onPress={() => {
-                  router.push({ pathname: '/editRecipe', params: { recipeJSON: JSON.stringify(recipe) } });
-                }}>
-                </RecipeItem>
-              )
-            }) : ""}
-        </YStack>
-        {showImportRecipeDialog ? <ImportRecipeComponent recipeId={xbloomRecipeID} onClose={() => onCloseImportCallback()} /> : ""}
-        {Platform.OS !== "ios" && showAndroidNFCDialog ? <AndroidNFCDialog onClose={() => onNFCDialogClose()} progress={readProgress}></AndroidNFCDialog> : ""}
 
-      </ScrollView>
+      <YStack key={"recipekey" + key} backgroundColor={colorScheme==="light" ? "#dddddd": "black"} maxWidth={600} paddingTop="$2" flexDirection="column" >
+        {recipesJSON ?
+          (<SwipeableFlatList keyExtractor={extractItemKey} data={getRecipes()} renderItem={({ item }) => (
+            <View>
+              <RecipeItem recipe={item} onPress={() => {
+                router.push({ pathname: '/editRecipe', params: { recipeJSON: JSON.stringify(item) } });
+              }}>
+              </RecipeItem>
+            </View>
+          )} renderQuickActions={({ index, item }: { index: number; item: Recipe }) => (
+            <View style={{ justifyContent: "flex-end", flex: 1, flexDirection: "row", alignItems: "center" }}>
+              <XStack paddingRight="$2" height="60%" paddingVertical="$3">
+                <Button onPress={() => deleteRecipe(item)} width={80} height="100%" marginRight="$1" alignItems="center" justifyContent="center" backgroundColor="red" borderColor="#ffa592" borderWidth={2} borderRadius={10}><AntDesign name="delete" size={25} color="white" /></Button>
+                <Button onPress={() => duplicateRecipe(item)} width={80} height="100%" alignItems="center" justifyContent="center" backgroundColor="#dddddd" borderColor="#ffa592" borderWidth={2} borderRadius={10}><Feather name="copy" size={25} color="black" /></Button>
+              </XStack>
+            </View>
+          )}
+            maxSwipeDistance={168}
+
+            //@ts-ignore-next-line
+            bounceFirstRowOnMount={bounceFirstRowOnMount}
+          >
+          </SwipeableFlatList>
+
+          ) : ""}
+      </YStack>
+
+      {showImportRecipeDialog && xbloomRecipeID ? <ImportRecipeComponent key={"import" + key} recipeId={xbloomRecipeID} onClose={() => onCloseImportCallback()} /> : ""}
+
+      {Platform.OS !== "ios" && showAndroidNFCDialog ? <AndroidNFCDialog onClose={() => onNFCDialogClose()} progress={readProgress}></AndroidNFCDialog> : ""}
+
     </>
   )
 }

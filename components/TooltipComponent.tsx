@@ -25,7 +25,7 @@ export default function TooltipComponent(props: {
 
   return (
     <YStack paddingLeft={props.paddingLeft}>
-      <AntDesign onPress={()=>handlePress()} name="questioncircle" size={20} color={colorScheme=="light" ? "blue" : "gray"}  />
+      <AntDesign onPress={()=>handlePress()} name="questioncircle" size={20} color="#ff783e"  />
     </YStack>
   )
 }

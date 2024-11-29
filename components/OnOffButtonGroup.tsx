@@ -1,7 +1,6 @@
-import Pour, { POUR_PATTERN } from '@/library/Pour'
-import { useEffect, useState } from 'react'
+import {useState } from 'react'
 import type { SizeTokens } from 'tamagui'
-import { H6, Label, ToggleGroup, XStack, YStack } from 'tamagui'
+import { H6, Label, ToggleGroup, XStack } from 'tamagui'
 
 export default function OnOffButtonGroup(props: {
     size: SizeTokens

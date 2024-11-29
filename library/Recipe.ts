@@ -43,6 +43,7 @@ class Recipe {
     public uuid: string = "";
     public title: string = "";
     public xid: string = "";
+    public key: string = ""
     private ratio: number = -1;
     private machineRatio: number = 1;
     private dosage: number = 15;
@@ -57,6 +58,8 @@ class Recipe {
 
     constructor(data?: number[], json?: string) {
         this.uuid = (uuid.v4() as string);
+        this.key = this.uuid;
+
         if (data) {
             this.parseData(data);
             return;
@@ -70,6 +73,7 @@ class Recipe {
             } else {
                 this.uuid = (uuid.v4() as string);
             }
+            this.key = this.uuid;
             for (let i = 0; i < jsonRecipe.pours.length; i++) {
                 if (typeof (jsonRecipe.pours[i]) == 'string') {
                     var pour = JSON.parse(jsonRecipe.pours[i]);
@@ -131,6 +135,7 @@ class Recipe {
 
     public generateNewUUID() {
         this.uuid = (uuid.v4() as string);
+        this.key = this.uuid;
     }
 
     public isXPodDosage(): boolean {
@@ -168,7 +173,9 @@ class Recipe {
     public getPourTotalVolume(): number {
         let totalVolume = 0;
         for (let pour of this.pours) {
-            totalVolume += pour.getVolume();
+            if (pour.volume > 0) {
+                totalVolume += pour.getVolume();
+            }
         }
         return totalVolume;
     }
@@ -217,7 +224,7 @@ class Recipe {
     }
 
 
-    public async readCard(nfc: NFC,progressCallBack: (progress: number, id?: string) => Promise<string | undefined>): Promise<boolean> {
+    public async readCard(nfc: NFC, progressCallBack: (progress: number, id?: string) => Promise<string | undefined>): Promise<boolean> {
         console.log('Read Card')
         try {
             await nfc.init();
@@ -295,6 +302,67 @@ class Recipe {
         data.splice(0, 32);
 
         return data
+    }
+
+    public autoFixPourVolumes(
+    ) {
+        if (this.pours.length == 1) { //if just 1 pour set to total volume
+            this.pours[0].volume = this.getTotalVolume();
+        } else if (this.pours.length > 1 && this.getPourTotalVolume() == 0) { 
+            //this is where pours have been added, but not volume has been set
+            //set the bloom to double dosage, and disribute rest evenly
+            this.pours[0].volume = this.dosage * 2;
+            for(let i = 1; i < this.pours.length; i++) {
+                this.pours[i].volume = (Math.round(this.getTotalVolume() - this.pours[0].volume) / (this.pours.length - 1));
+            }
+            //tack on/remove any extra thst occurs because of rounding to last pour
+            if(this.getTotalVolume() - this.getPourTotalVolume() !=0){
+                var diff = this.getTotalVolume() - this.getPourTotalVolume();
+                this.pours[this.pours.length - 1].volume += diff;
+            }
+        } else if (this.pours.length > 1 && this.getPourTotalVolume() !== 0) {
+            //this is auto adjusts each pour by scale factor
+            //then to the extent due to rounding it doesn't add up to total, it adjusts intelligently
+            var pourTotal = this.getPourTotalVolume();
+            var totalVolume = this.getTotalVolume();
+            // Calculate the scaling factor
+            const scalingFactor = totalVolume / pourTotal;
+
+            var pourVolumeMap = [];
+            for (let i = 0; i < this.pours.length; i++) {
+                pourVolumeMap.push({ pourIndex: i, origVolume: this.pours[i].volume, scaledVolume: this.pours[i].volume * scalingFactor, roundedScaledVolume: Math.round(this.pours[i].volume * scalingFactor) });
+            }
+
+
+            // Calculate the difference caused by rounding
+            const scaledTotal = pourVolumeMap.reduce((sum, pour) => sum + pour.roundedScaledVolume, 0);
+            const difference = totalVolume - scaledTotal;
+
+            if (difference !== 0) {
+                // Get the fractional differences from the rounded values
+                const adjustments = pourVolumeMap.map((value, index) => ({
+                    index,
+                    diff: value.roundedScaledVolume - value.scaledVolume
+                }));
+
+                // Sort adjustments by how far they are from the rounded value
+                adjustments.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+
+                // Incrementally adjust to correct the difference
+                let remainingDifference = difference;
+                for (let i = 0; remainingDifference !== 0; i++) {
+                    const targetIndex = adjustments[i % adjustments.length].index;
+                    pourVolumeMap[targetIndex].roundedScaledVolume += Math.sign(remainingDifference);
+                    remainingDifference -= Math.sign(remainingDifference);
+                }
+
+               
+            }
+             // Update the pour volumes
+             for (let i = 0; i < pourVolumeMap.length; i++) {
+                this.pours[pourVolumeMap[i].pourIndex].volume = pourVolumeMap[i].roundedScaledVolume;
+            }
+        }
     }
 
     public convertNumberArrayToHex(array: number[]): string {

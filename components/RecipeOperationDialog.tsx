@@ -22,18 +22,17 @@ export function RecipeOperationDialog({
     }, [showDialog])
     
     function onOpenChange(open: boolean){
-      console.log("test");
       if(!open){
         rerenderFunction();
       }
     }
 
     return (
-      <Popover  size="$1" allowFlip {...props} open={showPopover} onOpenChange={(open)=>onOpenChange(open)}>
+      <Popover size="$1" {...props} open={showPopover} onOpenChange={(open)=>onOpenChange(open)}>
      
   
         {shouldAdapt && (
-          <Adapt when="sm" platform="touch">
+          <Adapt platform="touch">
             <Popover.Sheet modal dismissOnSnapToBottom>
               <Popover.Sheet.Frame backgroundColor="$colorTransparent"
  padding="$4">
