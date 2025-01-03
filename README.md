@@ -8,6 +8,9 @@ This is an app for rewriting XBloom recipe cards. There are some limitations bas
 * If you experience exccessive "waits" on the machine with your recipe, turn off "overflow protection." This changes the pod type on the recipe so that it doesn't run into overflow issues.
 * The app support importing of recipes. Just open up an XBloom share link in your phone's browser and once loaded, "share" it with XBRecipeWriter. 
 
+## Data Format
+![alt text](https://github.com/terminaldisclaimer/XBRecipeWriter/blob/main/Data%20FormatImg.png)
+
 
 ## Get started with development
 XBRecipeWriter was written in Expo. 
