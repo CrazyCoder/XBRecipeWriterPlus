@@ -2,13 +2,13 @@
   "expo": {
     "name": "XBRecipeWriter",
     "slug": "XBRecipeWriter",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.terminaldisclaimer.XBRecipeWriter"
     },
     "android": {
@@ -69,7 +69,10 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/06ce7f2c-1928-4750-b8de-788849a53ad3"
+      "url": "https://u.expo.dev/06ce7f2c-1928-4750-b8de-788849a53ad3",
+      "requestHeaders": {
+        "expo-channel-name": "XBRecipeWriter_updates"
+      }
     }
   }
 }

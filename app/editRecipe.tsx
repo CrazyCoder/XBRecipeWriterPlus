@@ -6,7 +6,9 @@ import { AntDesign } from "@expo/vector-icons";
 import { Icon, IconElement } from "@ui-kitten/components";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Dimensions, Platform, Pressable, useColorScheme } from "react-native";
+import { Alert, useWindowDimensions, Platform, Pressable, useColorScheme } from "react-native";
+
+
 
 import { YStack, H6, XStack, ScrollView, Button, getTokens } from "tamagui";
 import OnOffButtonGroup from "@/components/OnOffButtonGroup";
@@ -40,8 +42,10 @@ export default function editRecipe() {
   const nfc = new NFC();
 
   const navigation = useNavigation();
-  const width = Dimensions.get('screen').width;
+  const { height, width } = useWindowDimensions();
+
   const colorScheme = useColorScheme();
+
 
 
 
@@ -181,6 +185,18 @@ export default function editRecipe() {
         r.pours[pourNumber].setAgitationAfter(on)
       }
       setRecipeInJSON(() => JSON.stringify(r));
+      setEnableSave(true);
+    }
+  }
+
+  function updateOverlow(on: boolean) {
+    console.log("Update Overflow Protection:" + on);
+    var r = getRecipe();
+    if (r) {
+      r.setOverflowProtection(on);
+      setRecipeInJSON(() => JSON.stringify(r));
+      setEnableSave(true);
+
     }
   }
 
@@ -196,13 +212,13 @@ export default function editRecipe() {
   }
 
   function autoAdjustPourVolumes(
-  ){
+  ) {
     var r = getRecipe();
     if (r) {
       r.autoFixPourVolumes();
       setRecipeInJSON(() => JSON.stringify(r));
       setKey((prev) => prev + 1);
-     // return roundedPours;
+      // return roundedPours;
     }
   }
 
@@ -347,7 +363,9 @@ export default function editRecipe() {
             }
           }
           return;
-        case "Pattern:":
+
+
+        case "Pattern":
           if (pourNumber !== undefined) {
             if (!isNaN(Number(value))) {
               recipe!.pours[pourNumber].pourPattern = Number(value);
@@ -363,14 +381,15 @@ export default function editRecipe() {
     }
   }
 
+
   return (
     <>
       {recipeInJSON && getRecipe() && recipeInJSON !== "" ?
-        <YStack key={key} >
+        <YStack maxWidth="100%" key={key} >
 
           <XStack maxHeight="90%">
-            <ScrollView showsVerticalScrollIndicator={false} margin="$2" >
-              <YStack maxWidth={600}>
+            <ScrollView showsVerticalScrollIndicator={false} margin="$2" nestedScrollEnabled={true} >
+              <YStack maxWidth="100%">
                 <XStack><LabeledInput setErrorFunction={setInputError} width={290} maxLength={23} initialValue={getRecipe()!.title} label="Title" onValidEditFunction={editInputComplete} validateInput={(data) => {
                   if (data.length > 0) {
                     return true;
@@ -385,10 +404,11 @@ export default function editRecipe() {
                   <TooltipComponent content="This is a 9 character unique identifier for the recipe that is used by the mobile app to look up the recipe online. It can be any alphanumeric value. Importantly, if you don't want the mobile app to show the wrong recipe, I'd probably change this. But if you do that, it won't show any recipe at all in the app (although it should still work on the machine) " />
                 </XStack>
                 <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.getDosage()} minimumValue={10} maximumValue={25} step={1} label="Dosage (g)" maxLength={2} inputMode="numeric" onValidEditFunction={editInputComplete} />
-                <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.grindSize} minimumValue={40} maximumValue={99} step={1} label="Grind Size" maxLength={2} inputMode="numeric" onValidEditFunction={editInputComplete} />
+                <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.grindSize} minimumValue={41} maximumValue={70} step={1} label="Grind Size" maxLength={2} inputMode="numeric" onValidEditFunction={editInputComplete} />
                 {/* <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.grindRPM} minimumValue={60} maximumValue={120} step={10} label="Grind RPM" maxLength={3} inputMode="numeric" onValidEditFunction={editInputComplete} /> */}
                 <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.getRatio()} minimumValue={5} maximumValue={25} step={1} label="Ratio" maxLength={3} inputMode="numeric" onValidEditFunction={editInputComplete} />
                 {/* <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.ratio} minimumValue={5} maximumValue={25} step={1}  label="Ratio" maxLength={3} inputMode="numeric" onValidEditFunction={editInputComplete} /> */}
+                <OnOffButtonGroup initialValue={getRecipe()?.getOverflowProtection() ? "1" : "0"} label="Overflow Protection" size="$4" orientation="horizontal" onToggle={(val) => updateOverlow(val)} />
 
                 {enableMachineRatio ?
                   <XStack>
@@ -397,26 +417,26 @@ export default function editRecipe() {
                   </XStack>
                   : ""}
 
-                <XStack alignItems="center">
-                <XStack >
-                  <TotalVolumeComponent recipe={getRecipe()!} />
-                  <TooltipComponent content="This field shows the total of all of the pours vs the total volume based on your dosage and ratio. You may also be wondering, hey wait why does the total volume not equal my dosage multipled by my ratio? The short answer is because that's the way it has to be, so don't worry about it. The longer answer is that because the XBloom recipe cards can only natively support 15g this app has to do some math to support other dosage volumes. And because the recipe cards further support only whole number ratios, due to some math rounding the total volume might not equal what the total volume should be based on your ratio. It's essentially as close as it can get. But, and THIS IS IMPORTANT, this does not affect your recipe. Your ratio is still what you actually specified. I promise. In fact, to prove it--take the total volume in the app and devidee by 15. " />
-                </XStack>
-                <Button borderWidth={1} borderColor="gray" paddingHorizontal="$3" paddingVertical="$2" marginLeft="$3" marginVertical="$2" backgroundColor="#ff5c00" color="black" onPress={()=>autoAdjustPourVolumes()}>Auto</Button>
+                <XStack alignItems="center" flexWrap="wrap">
+                  <XStack >
+                    <TotalVolumeComponent recipe={getRecipe()!} />
+                    <TooltipComponent content="This field shows the total of all of the pours vs the total volume based on your dosage and ratio. You may also be wondering, hey wait why does the total volume not equal my dosage multipled by my ratio? The short answer is because that's the way it has to be, so don't worry about it. The longer answer is that because the XBloom recipe cards can only natively support 15g this app has to do some math to support other dosage volumes. And because the recipe cards further support only whole number ratios, due to some math rounding the total volume might not equal what the total volume should be based on your ratio. It's essentially as close as it can get. But, and THIS IS IMPORTANT, this does not affect your recipe. Your ratio is still what you actually specified. I promise. In fact, to prove it--take the total volume in the app and divide by 15. " />
+                  </XStack>
+                  <Button borderWidth={2} pressStyle={{ backgroundColor: "#de4f00", borderColor: "gray" }} borderColor="gray" paddingHorizontal="$3" paddingVertical="$2" marginLeft="$2" marginVertical="$2" backgroundColor="#ff7036" color="white" onPress={() => autoAdjustPourVolumes()}>Auto</Button>
 
                 </XStack>
 
-                <ScrollView showsHorizontalScrollIndicator={false} centerContent={true} horizontal pagingEnabled={true}>
+                <ScrollView showsHorizontalScrollIndicator={false} centerContent={true} horizontal pagingEnabled={true} nestedScrollEnabled={true} removeClippedSubviews={true} disableScrollViewPanResponder={true}>
                   {getRecipe() ? getRecipe()!.pours.map((pour, index) => (
                     <YStack width={width - getTokens().size["$2"].val} key={index} borderWidth={2} borderColor="gray" marginInline="$2" borderRadius={10}>
                       <YStack padding="$2">
                         <XStack justifyContent="space-between">
-                          <H6 fontSize={20} fontWeight={700}>Pour {pour.getPourNumber()}</H6>
+                          <H6 fontSize={20} fontWeight={700}>Pour {pour.getPourNumber()} of {getRecipe()?.pours.length}</H6>
                           <XStack paddingRight="$2">
                             <XStack paddingRight="$2">
-                              <IconButton onPress={() => deletePour(index)} title="" icon={<AntDesign name="closecircle" size={24} color="red" />}></IconButton>
+                              <IconButton onPress={() => deletePour(index)} title="" icon={<AntDesign name="closesquareo" size={24} color="red" />}></IconButton>
                             </XStack>
-                            <IconButton onPress={() => addPour(index)} title="" icon={<AntDesign name="pluscircle" size={24} color="green" />}></IconButton>
+                            <IconButton onPress={() => addPour(index)} title="" icon={<AntDesign name="plussquareo" size={24} color="green" />}></IconButton>
                           </XStack>
                         </XStack>
                         <ValidatedInput setErrorFunction={setInputError} initialValue={pour.getVolume()} minimumValue={1} maximumValue={240} step={1} pourNumber={index} label="Volume" maxLength={3} inputMode="numeric" style={{ maxWidth: 100 }} onValidEditFunction={editInputComplete} />

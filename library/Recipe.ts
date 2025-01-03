@@ -47,6 +47,7 @@ class Recipe {
     private ratio: number = -1;
     private machineRatio: number = 1;
     private dosage: number = 15;
+    private overflowProtection: boolean = true;
     public grindSize: number = -1;
     public grindRPM: number = 120;
     public pours: Pour[] = [];
@@ -68,6 +69,12 @@ class Recipe {
             var jsonRecipe = JSON.parse(json);
             this.grindRPM = jsonRecipe.grindRPM;
             this.grindSize = jsonRecipe.grindSize;
+
+            if(jsonRecipe.overflowProtection !==undefined){
+                this.overflowProtection = jsonRecipe.overflowProtection;
+            }else{
+                this.overflowProtection = true;
+            }
             if (jsonRecipe.uuid) {
                 this.uuid = jsonRecipe.uuid;
             } else {
@@ -156,6 +163,14 @@ class Recipe {
 
     public getDosage(): number {
         return this.dosage;
+    }
+
+    public setOverflowProtection(overflowProtection: boolean) {
+        this.overflowProtection = overflowProtection;
+    }
+
+    public getOverflowProtection(): boolean {
+        return this.overflowProtection;
     }
 
 
@@ -264,7 +279,15 @@ class Recipe {
         }
         console.log("Prefix:" + this.convertNumberArrayToHex(data));
 
+
         data = data.concat(this.convertXIDToData(this.xid));
+
+        if(this.overflowProtection){
+            data.push(0x00);
+        }else{
+            data.push(0x02);
+        }
+
         data.push(this.pours.length << 3);
         for (let pour of this.pours) {
             data.push(pour.getVolume());
@@ -397,7 +420,7 @@ class Recipe {
                 result.push(xid.charCodeAt(i));
             }
             //add padding
-            for (let i = xid.length; i < 8; i++) {
+            for (let i = xid.length; i < 7; i++) {
                 result.push(0);
             }
         }
@@ -408,9 +431,10 @@ class Recipe {
     private parseData(data: number[]) {
         this.prefixArray = data.slice(0, 32);
 
+       
+        this.xid = this.convertDataToXID(data.slice(32, 39));
 
-        this.xid = this.convertDataToXID(data.slice(32, 40));
-
+        this.overflowProtection = data[39] !== 0x02; //this should probably be pod type
 
         let numberOfPours = data[40] >> 3;
 

@@ -111,14 +111,16 @@ export default function HomeScreen() {
   useEffect(() => {
     var recipes = db.retrieveAllRecipes();
     // var xbloom = new XBloomRecipe("CMcQuqFPRw9E2xDQvFAZkg==");
-    if (recipes) {
+    if (recipes && recipes.length > 0) {
       setRecipesJSON(JSON.stringify(recipes));
+    }else{
+      setRecipesJSON("");
     }
   }, [key]);
 
   function getRecipes(): Recipe[] {
     var recipes = [];
-    if (recipesJSON) {
+    if (recipesJSON && recipesJSON.length > 0) {
       var recipeData = JSON.parse(recipesJSON);
       for (let i = 0; i < recipeData.length; i++) {
         recipes.push(new Recipe(undefined, JSON.stringify(recipeData[i])));
@@ -224,17 +226,17 @@ export default function HomeScreen() {
     <>
 
 
-      <YStack key={"recipekey" + key} backgroundColor={colorScheme==="light" ? "#dddddd": "black"} maxWidth={600} paddingTop="$2" flexDirection="column" >
+      <YStack alignItems="center" key={"recipekey" + key} backgroundColor={colorScheme==="light" ? "#dddddd": "black"} maxWidth="100%" paddingTop="$2" flexDirection="column" >
         {recipesJSON ?
-          (<SwipeableFlatList keyExtractor={extractItemKey} data={getRecipes()} renderItem={({ item }) => (
-            <View>
+          (<SwipeableFlatList showsVerticalScrollIndicator={false} keyExtractor={extractItemKey} data={getRecipes()} renderItem={({ item }) => (
+            <View style={{maxWidth:600}}>
               <RecipeItem recipe={item} onPress={() => {
                 router.push({ pathname: '/editRecipe', params: { recipeJSON: JSON.stringify(item) } });
               }}>
               </RecipeItem>
             </View>
           )} renderQuickActions={({ index, item }: { index: number; item: Recipe }) => (
-            <View style={{ justifyContent: "flex-end", flex: 1, flexDirection: "row", alignItems: "center" }}>
+            <View style={{ maxWidth:600, justifyContent: "flex-end", flex: 1, flexDirection: "row", alignItems: "center" }}>
               <XStack paddingRight="$2" height="60%" paddingVertical="$3">
                 <Button onPress={() => deleteRecipe(item)} width={80} height="100%" marginRight="$1" alignItems="center" justifyContent="center" backgroundColor="red" borderColor="#ffa592" borderWidth={2} borderRadius={10}><AntDesign name="delete" size={25} color="white" /></Button>
                 <Button onPress={() => duplicateRecipe(item)} width={80} height="100%" alignItems="center" justifyContent="center" backgroundColor="#dddddd" borderColor="#ffa592" borderWidth={2} borderRadius={10}><Feather name="copy" size={25} color="black" /></Button>

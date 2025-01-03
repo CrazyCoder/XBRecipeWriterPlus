@@ -35,7 +35,7 @@ export default function AndroidNFCDialog(props: {
             modal
             dismissOnSnapToBottom
 
-            snapPoints={[62, 100]} // Adjust heights as necessary
+            snapPoints={[70, 100]} // Adjust heights as necessary
         >
             <Sheet.Overlay />
             <Sheet.Handle />

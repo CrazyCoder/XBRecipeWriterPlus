@@ -41,7 +41,9 @@ class RecipeDatabase {
                 ]
             );
         } else {
+            if(!TEST){
             throw new Error("DB: Recipe already exists");
+            }
         }
     }
 

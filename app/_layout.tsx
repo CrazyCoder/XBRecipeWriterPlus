@@ -45,6 +45,16 @@ function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
+
+
+const LightTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: 'rgb(221,221,221)',
+  },
+};
+
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
@@ -86,7 +96,7 @@ function RootLayout() {
       <TamaguiProvider config={config}>
         <Theme name={colorScheme}>
           <ThemeProvider
-            value={colorScheme === "light" ? DefaultTheme : DarkTheme}
+            value={colorScheme === "light" ? LightTheme : DarkTheme}
           >
             <SafeAreaProvider>
               <GestureHandlerRootView>
