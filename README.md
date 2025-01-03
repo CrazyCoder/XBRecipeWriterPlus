@@ -1,4 +1,4 @@
-XBRecipeWriter was written in Expo. 
+## Notes
 
 This is an app for rewriting XBloom recipe cards. There are some limitations based on how XBloom cards operates:
 
@@ -10,6 +10,8 @@ This is an app for rewriting XBloom recipe cards. There are some limitations bas
 
 
 ## Get started with development
+XBRecipeWriter was written in Expo. 
+
 
 1. Install dependencies
 
