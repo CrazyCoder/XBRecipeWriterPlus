@@ -9,21 +9,21 @@
       "distribution": "internal",
       "channel": "development",
       "env": {
-            "ANDROID_SDK_ROOT": "/Users/danielblock/Library/Android/sdk/"
+            "ANDROID_SDK_ROOT": "~/Library/Android/sdk/"
         }
     },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
       "env": {
-            "ANDROID_SDK_ROOT": "/Users/danielblock/Library/Android/sdk/"
+            "ANDROID_SDK_ROOT": "~/Library/Android/sdk/"
         }
     },
     "production": {
       "autoIncrement": true,
       "channel": "production",
       "env": {
-            "ANDROID_SDK_ROOT": "/Users/danielblock/Library/Android/sdk/"
+            "ANDROID_SDK_ROOT": "~/Library/Android/sdk/"
         },
         "android": {
         "buildType": "apk"
