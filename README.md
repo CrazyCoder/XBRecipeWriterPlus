@@ -9,7 +9,7 @@ This is an app for rewriting XBloom recipe cards. There are some limitations bas
 * The app support importing of recipes. Just open up an XBloom share link in your phone's browser and once loaded, "share" it with XBRecipeWriter. 
 
 ## Data Format
-![alt text](https://github.com/terminaldisclaimer/XBRecipeWriter/blob/main/Data%20FormatImg.png)
+![alt text](https://github.com/terminaldisclaimer/XBRecipeWriter/blob/main/Data%20Format.png)
 
 
 ## Get started with development
