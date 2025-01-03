@@ -1,8 +1,15 @@
-# Welcome to your Expo app 👋
+XBRecipeWriter was written in Expo. 
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This is an app for rewriting XBloom recipe cards. There are some limitations based on how XBloom cards operates:
 
-## Get started
+1. This only works with genuine XBloom NFC cards. XBloom includes a 32 byte hash in the beginning of the card. The hash appears to be based on the cards serial number. This app does not recalculate that hash, which is why it only works on genuine cards. Theoretically, if you purchased rewritable UID cards, you may be able to use third party NFC chips though.
+2. All XBloom recipe cards are limited to 15G of beans. The reason for that is because the machine verifies the total volume in your recipe equals 15 * your ratio. To get around this, the app will automatically adjusts what it calls the "machine ratio" if you adjust the dosage. This doesn't actually affect the ratio of your recipe, but just what is sent to the machine. The consequence of this is that the app may adjust your total volume by up to +/- 7.5mg due to rounding.
+3. The cards do not support .5 ratios
+4. If you experience exccessive "waits" on the machine with your recipe, turn off "overflow protection." This changes the pod type on the recipe so that it doesn't run into overflow issues.
+5. The app support importing of recipes. Just open up an XBloom share link in your phone's browser and once loaded, "share" it with XBRecipeWriter. 
+
+
+## Get started with development
 
 1. Install dependencies
 
@@ -16,35 +23,3 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
     npx expo start
    ```
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
