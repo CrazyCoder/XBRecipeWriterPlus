@@ -364,7 +364,6 @@ export default function editRecipe() {
           }
           return;
 
-
         case "Pattern":
           if (pourNumber !== undefined) {
             if (!isNaN(Number(value))) {
@@ -447,7 +446,7 @@ export default function editRecipe() {
 
                         <ValidatedInput setErrorFunction={setInputError} initialValue={pour.getPauseTime()} minimumValue={0} maximumValue={59} step={1} pourNumber={index} label="Pause Time (s)" maxLength={2} inputMode="numeric" onValidEditFunction={editInputComplete} />
 
-                        <PatternButtonGroup initalValue={"" + pour.getPourPattern()} label="Pattern:" size="$4" orientation="horizontal" onToggle={(val) => editInputComplete("Pattern:", val, index)} />
+                        <PatternButtonGroup initalValue={"" + pour.getPourPattern()} label="Pattern" size="$4" orientation="horizontal" onToggle={(val) => editInputComplete("Pattern", val, index)} />
                         <OnOffButtonGroup initialValue={pour.getAgitationBefore() ? "1" : "0"} label="Agitation Before:" size="$4" orientation="horizontal" onToggle={(val) => updateAgitation(index, true, val)} />
                         <OnOffButtonGroup initialValue={pour.getAgitationAfter() ? "1" : "0"} label="Agitation After:   " size="$4" orientation="horizontal" onToggle={(val) => updateAgitation(index, false, val)} />
                       </YStack>
