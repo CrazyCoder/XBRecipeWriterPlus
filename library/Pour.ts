@@ -1,17 +1,16 @@
-import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
-
-export const POUR_PATTERN={
-    CENTERED:0,
-    CIRCULAR:1,
-    SPIRAL:2
+export const POUR_PATTERN = {
+    CENTERED: 0,
+    CIRCULAR: 1,
+    SPIRAL: 2
 }
 
-export const AGITATION={
-    ALL_OFF:0,
-    BEFORE_ON_AFTER_OFF:1,
-    BEFORE_OFF_AFTER_ON:2,
-    BEFORE_ON_AFTER_ON:3
+export const AGITATION = {
+    ALL_OFF: 0,
+    BEFORE_ON_AFTER_OFF: 1,
+    BEFORE_OFF_AFTER_ON: 2,
+    BEFORE_ON_AFTER_ON: 3
 }
+
 class Pour {
     public pourNumber: number = -1;
     public volume: number = -1;
@@ -21,9 +20,6 @@ class Pour {
     public pourPattern: number = -1;
     public pauseTime: number = -1;
 
-    
-
-    
 
     constructor(
         pourNumber: number,
@@ -43,7 +39,6 @@ class Pour {
         this.pauseTime = pauseTime ?? this.pauseTime;
     }
 
-   
 
     public getPourNumber(): number {
         return this.pourNumber;
@@ -102,7 +97,7 @@ class Pour {
     }
 
     public setAgitationAfter(agitationAfter: boolean): void {
-      
+
         if (agitationAfter) {
             this.agitation |= 0b10;
         } else {
@@ -119,7 +114,6 @@ class Pour {
     }
 
     public getPauseTime(): number {
-    
         return this.pauseTime;
     }
 
@@ -140,38 +134,35 @@ class Pour {
     }
 
     private getAgitationText(): string {
-        switch(this.agitation){
+        switch (this.agitation) {
             case AGITATION.ALL_OFF:
-              return "Agitation Before Off/Agitation After Off"
-              break;
+                return "Agitation Before Off/Agitation After Off"
             case AGITATION.BEFORE_ON_AFTER_OFF:
-              return "Agitation Before On/Agitation After Off"
-              break;
+                return "Agitation Before On/Agitation After Off"
             case AGITATION.BEFORE_OFF_AFTER_ON:
-              return "Agitation Before Off/Agitation After On"
-              break;
+                return "Agitation Before Off/Agitation After On"
             case AGITATION.BEFORE_ON_AFTER_ON:
-              return "Agitation Before On/Agitation After On"
-              break;
+                return "Agitation Before On/Agitation After On"
             default:
-              return "Error"
-          }
+                return "Error"
+        }
     }
 
     private getPourPatternText(): string {
-        switch(this.pourPattern){
+        return Pour.getPourPatternText(this.pourPattern);
+    }
+
+    public static getPourPatternText(pattern: number) {
+        switch (pattern) {
             case POUR_PATTERN.CENTERED:
-              return "centered"
-              break;
+                return "Centered"
             case POUR_PATTERN.CIRCULAR:
-              return "circular"
-              break;
+                return "Circular"
             case POUR_PATTERN.SPIRAL:
-              return "spiral"
-              break;
+                return "Spiral"
             default:
-              return "Error"
-          }
+                return "Error"
+        }
     }
 
     public toString(): string {
@@ -185,8 +176,6 @@ class Pour {
             pauseTime: ${this.pauseTime}
         }`;
     }
-
-    
 }
 
 export default Pour;

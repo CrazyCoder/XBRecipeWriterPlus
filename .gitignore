@@ -27,3 +27,5 @@ expo-env.d.ts
 
 
 .env.local
+credentials.json
+/.idea/

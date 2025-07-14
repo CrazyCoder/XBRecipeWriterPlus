@@ -2,7 +2,16 @@ import NFC from "./NFC";
 import Pour from "./Pour";
 import uuid from 'react-native-uuid';
 
-
+export const CUP_TYPE = {
+    XPOD: 0x00,
+    OMNI: 0x02,
+    TEA: 0x23,  // as on original tea recipe cards, 0x03 also works as tea
+    OTHER: 0x04 // works as coffee, probably the same as Omni
+}
+// This byte value for the grind size disables the grinder
+export const GRINDER_OFF: number = 41;
+// Grind size is stored on the NFC card with offset (grind_size_value - 40)
+export const GRIND_SIZE_OFFSET = 40;
 
 const POLY_TABLE = [
     0x00, 0x5E, 0xBC, 0xE2, 0x61, 0x3F, 0xDD, 0x83,
@@ -39,22 +48,22 @@ const POLY_TABLE = [
     0xB6, 0xE8, 0x0A, 0x54, 0xD7, 0x89, 0x6B, 0x35,
 ];
 
+
 class Recipe {
     public uuid: string = "";
     public title: string = "";
     public xid: string = "";
     public key: string = ""
     private ratio: number = -1;
-    private machineRatio: number = 1;
     private dosage: number = 15;
-    private overflowProtection: boolean = true;
     public grindSize: number = -1;
     public grindRPM: number = 120;
+    public grinder: boolean = true;
     public pours: Pour[] = [];
     public checksum: number = -1;
     public prefixArray: number[] = [];
     public suffixArray: number[] = [];
-
+    public cupType: number = CUP_TYPE.XPOD;
 
 
     constructor(data?: number[], json?: string) {
@@ -66,15 +75,12 @@ class Recipe {
             return;
         }
         if (json) {
-            var jsonRecipe = JSON.parse(json);
+            let jsonRecipe = JSON.parse(json);
             this.grindRPM = jsonRecipe.grindRPM;
             this.grindSize = jsonRecipe.grindSize;
+            this.cupType = jsonRecipe.cupType ?? CUP_TYPE.XPOD;
+            this.grinder = jsonRecipe.grinder ?? true;
 
-            if(jsonRecipe.overflowProtection !==undefined){
-                this.overflowProtection = jsonRecipe.overflowProtection;
-            }else{
-                this.overflowProtection = true;
-            }
             if (jsonRecipe.uuid) {
                 this.uuid = jsonRecipe.uuid;
             } else {
@@ -82,22 +88,18 @@ class Recipe {
             }
             this.key = this.uuid;
             for (let i = 0; i < jsonRecipe.pours.length; i++) {
-                if (typeof (jsonRecipe.pours[i]) == 'string') {
-                    var pour = JSON.parse(jsonRecipe.pours[i]);
-                } else {
-                    var pour = jsonRecipe.pours[i];
-                }
+                let pour = typeof (jsonRecipe.pours[i]) == 'string' ? JSON.parse(jsonRecipe.pours[i]) : jsonRecipe.pours[i];
                 if (pour.pauseTime == 256) {
                     pour.pauseTime = 0;
                 }
-                var p = new Pour(
+                let p = new Pour(
                     (pour.pourNumber),
                     pour.volume,
                     pour.temperature,
                     pour.flowRate,
                     pour.agitation,
                     pour.pourPattern,
-                    pour.pauseTime)
+                    pour.pauseTime);
                 this.pours.push(p);
             }
             this.prefixArray = jsonRecipe.prefixArray;
@@ -119,8 +121,6 @@ class Recipe {
         for (let i = 0; i < this.pours.length; i++) {
             this.pours[i].pourNumber = i + 1;
         }
-
-
     }
 
     public setRatio(ratio: number) {
@@ -131,22 +131,9 @@ class Recipe {
         return this.ratio;
     }
 
-    public getMachineRatio(): number {
-        if (this.isXPodDosage()) {
-            return this.ratio;
-        } else {
-            return Math.round(this.getTotalVolume() / 15);
-        }
-        //return this.machineRatio;
-    }
-
     public generateNewUUID() {
         this.uuid = (uuid.v4() as string);
         this.key = this.uuid;
-    }
-
-    public isXPodDosage(): boolean {
-        return this.dosage == 15;
     }
 
     public deletePour(pourNumber: number) {
@@ -157,7 +144,6 @@ class Recipe {
     }
 
     public setDosage(dosage: number) {
-
         this.dosage = dosage;
     }
 
@@ -165,24 +151,8 @@ class Recipe {
         return this.dosage;
     }
 
-    public setOverflowProtection(overflowProtection: boolean) {
-        this.overflowProtection = overflowProtection;
-    }
-
-    public getOverflowProtection(): boolean {
-        return this.overflowProtection;
-    }
-
-
-
     public getTotalVolume(): number {
-
-        if (this.isXPodDosage()) {
-            return this.dosage * this.ratio
-        } else {
-            return Math.round((this.dosage * this.ratio) / 15) * 15;
-        }
-
+        return this.dosage * this.ratio
     }
 
     public getPourTotalVolume(): number {
@@ -199,7 +169,28 @@ class Recipe {
         return this.getPourTotalVolume() === this.getTotalVolume();
     }
 
+    public isTea(): boolean {
+        return this.cupType == CUP_TYPE.TEA;
+    }
 
+    public getCupTypeName(): string {
+        return Recipe.getCupTypeText(this.cupType);
+    }
+
+    public static getCupTypeText(cupType: number): string {
+        switch (cupType) {
+            case CUP_TYPE.XPOD:
+                return "xPod";
+            case CUP_TYPE.OMNI:
+                return "Omni";
+            case CUP_TYPE.TEA:
+                return "Tea";
+            case CUP_TYPE.OTHER:
+                return "Other";
+            default:
+                return "Unknown";
+        }
+    }
 
     // Function to calculate CRC-8/MAXIM-DOW
     private calculateCRC(array: number[]): number {
@@ -218,16 +209,13 @@ class Recipe {
         try {
             await nfc.init();
             await nfc.open();
-            var hash = await nfc.readHash();
+            let hash = await nfc.readHash();
             console.log("Read Hash:" + this.convertNumberArrayToHex(hash!));
 
             if (hash) {
-                var data = this.getData(hash);
+                let data = this.getData(hash);
                 console.log(this.convertNumberArrayToHex(data));
-                //        var data = [249,24,80,207,4,14,81,85,240,235,57,87,169,254,224,164,137,252,56,196,242,173,180,175,25,224,148,168,125,239,237,40,86,69,82,48,48,57,0,0,40,45,95,2,2,226,0,0,30,50,94,2,2,241,0,0,35,50,93,2,0,244,0,0,35,50,93,1,2,241,0,0,35,45,92,1,2,0,0,0,35,24,16,237,0,244,0,0,35,25,17,130,0,251,0,0,35,23,15,97,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-
                 await nfc.writeCard(data, progressCallBack);
-
             }
         } catch (e) {
             if (!nfc.getIsClosed()) { //make sure NFC reading wasn't closed by user --really just an android problem
@@ -245,7 +233,7 @@ class Recipe {
             await nfc.init();
             await nfc.open();
             await progressCallBack(20)
-            var data = await nfc.readCard(progressCallBack);
+            let data = await nfc.readCard(progressCallBack);
             await progressCallBack(90)
             await nfc.close();
             await progressCallBack(100)
@@ -279,17 +267,14 @@ class Recipe {
         }
         console.log("Prefix:" + this.convertNumberArrayToHex(data));
 
-
         data = data.concat(this.convertXIDToData(this.xid));
 
-        if(this.overflowProtection){
-            data.push(0x00);
-        }else{
-            data.push(0x02);
-        }
+        data.push(this.cupType);
 
         data.push(this.pours.length << 3);
+        let pourNumber = 0;
         for (let pour of this.pours) {
+            pourNumber++;
             data.push(pour.getVolume());
             data.push(pour.getTemperature());
             data.push(pour.getPourPattern());
@@ -299,23 +284,35 @@ class Recipe {
             } else {
                 data.push(256 + (0 - pour.getPauseTime()));
             }
-            data.push(0);
-            data.push(0);
+            if (pourNumber === 1) {
+                data.push(this.dosage);   // 5th byte of the first pour stores the dose
+                if (this.grinder) {
+                    data.push(this.grindRPM); // 6th byte of the first pour stores the RPM
+                } else {
+                    data.push(0x00);
+                }
+            } else {
+                data.push(0x00);
+                data.push(0x00);
+            }
             data.push(pour.getFlowRate());
         }
-        data.push(this.grindSize - 40);
-        data.push(this.getMachineRatio());
+
+        if (this.grinder) {
+            data.push(this.grindSize - GRIND_SIZE_OFFSET);
+        } else {
+            data.push(GRINDER_OFF); // setting grind size to 41 (0x29) disables the grinder
+        }
+
+        data.push(this.getRatio());
         let checkSum = this.calculateCRC(data);
         console.log("CheckSum:" + this.convertNumberArrayToHex(data));
         console.log("CheckSum:" + checkSum + ":" + this.checksum);
         data.push(checkSum);
 
         data.push(0x00);
-        data.push(0x00); //this is usually F4 (but not always), but it doesn't seem to matter 
+        data.push(0x00); //this is usually F4 (but not always), but it doesn't seem to matter
 
-        //these next two seem open, so writing dosage there
-        data.push(0xBB)
-        data.push(this.getDosage())
         /*var suffix = [];
         for (let i = 0; i < this.suffixArray.length; i++) {
            suffix[i] = 0;
@@ -323,39 +320,48 @@ class Recipe {
         //data = data.concat(suffix);
         //data = data.concat(this.suffixArray);
         data.splice(0, 32);
-
         return data
     }
 
-    public autoFixPourVolumes(
-    ) {
+    public autoFixPourVolumes() {
+        if (this.isTea()) { // set all pours to 90 ml for tea
+            for (let pour of this.pours) {
+                pour.volume = 90;
+            }
+            this.fixRatio();
+            return;
+        }
         if (this.pours.length == 1) { //if just 1 pour set to total volume
             this.pours[0].volume = this.getTotalVolume();
-        } else if (this.pours.length > 1 && this.getPourTotalVolume() == 0) { 
+        } else if (this.pours.length > 1 && this.getPourTotalVolume() == 0) {
             //this is where pours have been added, but not volume has been set
             //set the bloom to double dosage, and disribute rest evenly
             this.pours[0].volume = this.dosage * 2;
-            for(let i = 1; i < this.pours.length; i++) {
+            for (let i = 1; i < this.pours.length; i++) {
                 this.pours[i].volume = (Math.round(this.getTotalVolume() - this.pours[0].volume) / (this.pours.length - 1));
             }
             //tack on/remove any extra thst occurs because of rounding to last pour
-            if(this.getTotalVolume() - this.getPourTotalVolume() !=0){
-                var diff = this.getTotalVolume() - this.getPourTotalVolume();
+            if (this.getTotalVolume() - this.getPourTotalVolume() != 0) {
+                let diff = this.getTotalVolume() - this.getPourTotalVolume();
                 this.pours[this.pours.length - 1].volume += diff;
             }
         } else if (this.pours.length > 1 && this.getPourTotalVolume() !== 0) {
             //this is auto adjusts each pour by scale factor
             //then to the extent due to rounding it doesn't add up to total, it adjusts intelligently
-            var pourTotal = this.getPourTotalVolume();
-            var totalVolume = this.getTotalVolume();
+            let pourTotal = this.getPourTotalVolume();
+            let totalVolume = this.getTotalVolume();
             // Calculate the scaling factor
             const scalingFactor = totalVolume / pourTotal;
 
-            var pourVolumeMap = [];
+            let pourVolumeMap = [];
             for (let i = 0; i < this.pours.length; i++) {
-                pourVolumeMap.push({ pourIndex: i, origVolume: this.pours[i].volume, scaledVolume: this.pours[i].volume * scalingFactor, roundedScaledVolume: Math.round(this.pours[i].volume * scalingFactor) });
+                pourVolumeMap.push({
+                    pourIndex: i,
+                    origVolume: this.pours[i].volume,
+                    scaledVolume: this.pours[i].volume * scalingFactor,
+                    roundedScaledVolume: Math.round(this.pours[i].volume * scalingFactor)
+                });
             }
-
 
             // Calculate the difference caused by rounding
             const scaledTotal = pourVolumeMap.reduce((sum, pour) => sum + pour.roundedScaledVolume, 0);
@@ -378,11 +384,9 @@ class Recipe {
                     pourVolumeMap[targetIndex].roundedScaledVolume += Math.sign(remainingDifference);
                     remainingDifference -= Math.sign(remainingDifference);
                 }
-
-               
             }
-             // Update the pour volumes
-             for (let i = 0; i < pourVolumeMap.length; i++) {
+            // Update the pour volumes
+            for (let i = 0; i < pourVolumeMap.length; i++) {
                 this.pours[pourVolumeMap[i].pourIndex].volume = pourVolumeMap[i].roundedScaledVolume;
             }
         }
@@ -431,24 +435,41 @@ class Recipe {
     private parseData(data: number[]) {
         this.prefixArray = data.slice(0, 32);
 
-       
         this.xid = this.convertDataToXID(data.slice(32, 39));
 
-        this.overflowProtection = data[39] !== 0x02; //this should probably be pod type
+        this.cupType = data[39];
+
+        // Cascara Coffee Cherry Tea card uses 0x13, 0x03 also works as tea
+        if (this.cupType == 0x13 || this.cupType == 0x03) {
+            console.log("Fixing 0x13 cup type to 0x23 (tea)");
+            this.cupType = CUP_TYPE.TEA;
+        }
+
+        // Tea recipe, use 5g dose by default
+        if (this.isTea()) {
+            this.dosage = 5;
+        }
 
         let numberOfPours = data[40] >> 3;
 
-        this.suffixArray = data.slice(44 + (numberOfPours * 8), data.length);
+        let poursDataLength = numberOfPours * 8;
+        this.suffixArray = data.slice(44 + poursDataLength, data.length);
 
-        this.grindSize = data[41 + (numberOfPours * 8)] + 40
-        this.ratio = data[42 + (numberOfPours * 8)]
-        this.checksum = data[43 + (numberOfPours * 8)]
+        this.grindSize = data[41 + poursDataLength] + GRIND_SIZE_OFFSET
+
+        if (this.grindSize == GRIND_SIZE_OFFSET + GRINDER_OFF) {
+            this.grinder = false;
+        }
+
+        this.ratio = data[42 + poursDataLength]
+        this.checksum = data[43 + poursDataLength]
 
 
         let index = 41;
         let pourNum = 1;
+        let poursVolume = 0;
 
-        while (index < 41 + (numberOfPours * 8)) {
+        while (index < 41 + poursDataLength) {
 
             let volume = data[index]
             let temp = data[index + 1]
@@ -457,31 +478,59 @@ class Recipe {
             let pause = 256 - data[index + 4]
             let flow = data[index + 7]
 
-            let pour = new Pour(pourNum, volume, temp, flow, agitation, pattern, pause);
+            if (this.isTea() && volume > 90) {
+                console.log("Fixing tea pour volume to 90ml, was: " + volume + "ml")
+                volume = 90;
+            }
 
+            const dose = data[index + 5]
+            const rpm = data[index + 6]
+
+            if (dose !== 0 || rpm !== 0 && pourNum == 1) {
+                console.log(`Found dose/RPM data: ${pourNum}: ${Recipe.byteToHex(dose)}=${dose} ${Recipe.byteToHex(rpm)}=${rpm}`);
+                this.grindRPM = (rpm >= 60 && rpm <= 120) ? rpm : 120;
+                this.dosage = (dose >= 1 && dose <= 25) ? dose : this.isTea() ? 5 : 15;
+            }
+
+            let pour = new Pour(pourNum, volume, temp, flow, agitation, pattern, pause);
             this.pours.push(pour);
 
+            poursVolume += volume;
             index += 8
             pourNum++;
         }
 
-        //check if its a recipe with a changed dosage made by this application
-        let thirdDatum = data[46 + (numberOfPours * 8)]
-        if (thirdDatum == 0xBB) {
-            this.dosage = data[47 + (numberOfPours * 8)]
-            this.ratio = Math.round(this.getPourTotalVolume() / this.dosage);
+        const byte44 = data[poursDataLength + 44]
+        const byte45 = data[poursDataLength + 45]
+
+        if (byte44 !== 0 || byte45 !== 0) {
+            console.log(`Byte44/45: ${Recipe.byteToHex(byte44)} ${Recipe.byteToHex(byte45)}`);
         }
+
+        if (this.isTea()) {
+            // adjust the ratio if the volume was fixed
+            this.fixRatio();
+        }
+    }
+
+    public fixRatio() {
+        this.ratio = Math.round(this.getPourTotalVolume() / this.dosage);
+    }
+
+    public static byteToHex(b: number) {
+        return `0x` + b.toString(16).padStart(2, '0');
     }
 
     public toString(): string {
         return `Recipe: ${this.title}
     XID: ${this.xid}
+    Cup: ${this.cupType}
+    Dose: ${this.dosage}
     Ratio: 1:${this.ratio}
     Grind Size: ${this.grindSize}
     Grind RPM: ${this.grindRPM}
     Pours: ${this.pours.map(pour => pour.toString()).join(", ")}`
     }
-
 }
 
 export default Recipe;

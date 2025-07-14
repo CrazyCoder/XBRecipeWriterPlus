@@ -1,8 +1,9 @@
-const { getSentryExpoConfig } = require("@sentry/react-native/metro");
-const {
-    wrapWithReanimatedMetroConfig,
-  } = require('react-native-reanimated/metro-config');
+const { getDefaultConfig } = require('expo/metro-config');
 
-const config = getSentryExpoConfig(__dirname);
+/** @type {import('expo/metro-config').MetroConfig} */
+const config = getDefaultConfig(__dirname);
 
-module.exports = wrapWithReanimatedMetroConfig(config);
+// See https://github.com/expo/expo/discussions/36551
+config.resolver.unstable_enablePackageExports = false;
+
+module.exports = config;

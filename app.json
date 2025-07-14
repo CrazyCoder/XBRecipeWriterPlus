@@ -2,7 +2,7 @@
   "expo": {
     "name": "XBRecipeWriter",
     "slug": "XBRecipeWriter",
-    "version": "1.0.5",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -27,6 +27,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.0.21"
+          }
+        }
+      ],
       "expo-router",
       [
         "react-native-nfc-manager",
@@ -47,15 +55,8 @@
         }
       ],
       "expo-share-intent",
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://sentry.io/",
-          "project": "react-native",
-          "organization": "dsb-ft"
-        }
-      ]
-
+      "expo-font",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
