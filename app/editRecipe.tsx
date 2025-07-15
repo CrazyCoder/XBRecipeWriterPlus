@@ -352,15 +352,14 @@ export default function editRecipe() {
                                                   }}
                                                   errorMessage="You must have a title"/>
                                     <TooltipComponent paddingLeft="$2"
-                                                      content="This is the title of the recipe for use in this app only. It is never stored on the card. So that's why this field is blank when you've just read in a card"/>
-
+                                                      content={"This is the title of the recipe for use in this app only. It is never stored on the card. So that's why this field is blank when you've just read in a card."}/>
                                 </XStack>
                                 <XStack>
                                     <LabeledInput setErrorFunction={setInputError} width={110} maxLength={8}
                                                   initialValue={getRecipe()!.xid} label={RECIPE_LABELS.XID}
                                                   onValidEditFunction={editInputComplete}/>
                                     <TooltipComponent
-                                        content="This is a 8 character unique identifier for the recipe that is used by the mobile app to look up the recipe online. It can be any alphanumeric value. Importantly, if you don't want the mobile app to show the wrong recipe, I'd probably change this. But if you do that, it won't show any recipe at all in the app (although it should still work on the machine) "/>
+                                        content="This is a 8 character unique identifier for the recipe that is used by the mobile app to look up the recipe online. It can be any alphanumeric value. Importantly, if you don't want the mobile app to show the wrong recipe, I'd probably change this. But if you do that, it won't show any recipe at all in the app (although it should still work on the machine)."/>
                                 </XStack>
                                 <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.dosage}
                                                 minimumValue={1} maximumValue={getRecipe()!.isTea() ? 10 : 25} step={1}
@@ -387,29 +386,37 @@ export default function editRecipe() {
                                                         onValidEditFunction={editInputComplete}/>
                                     </>
                                 )}
-                                <MyButtonGroup initialValue={"" + getRecipe()!.cupType} label={RECIPE_LABELS.CUP}
-                                               size="$4" minWidth={"$5"}
-                                               orientation="horizontal"
-                                               onToggle={(val) => editInputComplete(RECIPE_LABELS.CUP, val)}
-                                               buttons={Object.values(CUP_TYPE)}
-                                               getLabelText={Recipe.getCupTypeText}
-                                />
+                                <XStack>
+                                    <MyButtonGroup initialValue={"" + getRecipe()!.cupType} label={RECIPE_LABELS.CUP}
+                                                   size="$4" minWidth={"$5"}
+                                                   orientation="horizontal"
+                                                   onToggle={(val) => editInputComplete(RECIPE_LABELS.CUP, val)}
+                                                   buttons={Object.values(CUP_TYPE)}
+                                                   getLabelText={Recipe.getCupTypeText}
+                                    />
+                                    <TooltipComponent
+                                        content={"Omni type disables overflow protection. Other type is experimental, should work the same as Omni, but allows you to tell the difference between the recipes for custom drippers and will be set automatically from the recipes shared via a link if they specify such cup.\n\nxPod = 0x00, Omni = 0x02, Tea = 0x23 (0x03 also works as tea, but original cards use 0x23), Other = 0x04."}/>
+                                </XStack>
                                 {!getRecipe()!.isTea() && (
                                     <>
-                                        <MyButtonGroup initialValue={getRecipe()!.grinder ? "1" : "0"}
-                                                       label={RECIPE_LABELS.GRINDER} size="$4" minWidth={"$5"}
-                                                       orientation="horizontal"
-                                                       onToggle={(val) => editInputComplete(RECIPE_LABELS.GRINDER, val)}
-                                                       buttons={ON_OFF_BUTTON_CONFIG.buttons}
-                                                       getLabelText={ON_OFF_BUTTON_CONFIG.getLabelText}
-                                        />
+                                        <XStack>
+                                            <MyButtonGroup initialValue={getRecipe()!.grinder ? "1" : "0"}
+                                                           label={RECIPE_LABELS.GRINDER} size="$4" minWidth={"$5"}
+                                                           orientation="horizontal"
+                                                           onToggle={(val) => editInputComplete(RECIPE_LABELS.GRINDER, val)}
+                                                           buttons={ON_OFF_BUTTON_CONFIG.buttons}
+                                                           getLabelText={ON_OFF_BUTTON_CONFIG.getLabelText}
+                                            />
+                                            <TooltipComponent
+                                                content={"Disabling grinder is experimental. It sets grind size to 81 (instead of 80 max). However, machine will not accept the card with the grinder disabled. As a workaround, you can load any other recipe with the grinder enabled first, either via a shortcut button, another card or an app. Once any other recipe is already loaded, the card with disabled grinder will work and you'll see '--' for the grind size."}/>
+                                        </XStack>
                                     </>
                                 )}
                                 <XStack alignItems="center" flexWrap="wrap">
                                     <XStack>
                                         <TotalVolumeComponent recipe={getRecipe()!}/>
                                         <TooltipComponent
-                                            content="This field shows the total volume of all of the pours vs the total volume based on your dosage and ratio (sum of all pour volumes / dose * ratio). The numbers need to match for the valid recipe that the machine will accept. Ajust pour volumes, ratio and dose as needed."/>
+                                            content={"This field shows the total volume of all of the pours vs the total volume based on your dosage and ratio (sum of all pour volumes / dose * ratio). The numbers need to match for the valid recipe that the machine will accept. Ajust pour volumes, ratio and dose as needed."}/>
                                     </XStack>
                                     <Button borderWidth={2}
                                             pressStyle={{backgroundColor: "#de4f00", borderColor: "gray"}}
