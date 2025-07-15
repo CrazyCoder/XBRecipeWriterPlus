@@ -173,18 +173,6 @@ export default function editRecipe() {
         />
     );
 
-    function updateAgitation(pourNumber: number, isBefore: boolean, on: boolean) {
-        let r = getRecipe();
-        if (r) {
-            if (isBefore) {
-                r.pours[pourNumber].setAgitationBefore(on)
-            } else {
-                r.pours[pourNumber].setAgitationAfter(on)
-            }
-            setRecipeInJSON(() => JSON.stringify(r));
-            setEnableSave(true);
-        }
-    }
 
     function deletePour(pourNumber: number) {
         let r = getRecipe();
@@ -252,123 +240,99 @@ export default function editRecipe() {
 
     async function editInputComplete(label: string, value: string, pourNumber?: number) {
         let recipe = getRecipe();
-        if (recipe !== null) {
-            switch (label) {
-                case RECIPE_LABELS.GRINDER:
-                    if (!isNaN(Number(value))) {
-                        recipe.grinder = value === "1";
-                        setRecipeInJSON(() => JSON.stringify(recipe));
-                        setKey((prev) => prev + 1);
-                        setEnableSave(true);
-                    }
-                    return;
-                case RECIPE_LABELS.GRIND_SIZE:
-                    if (!isNaN(Number(value))) {
-                        recipe!.grindSize = Number(value);
-                        setRecipeInJSON(() => JSON.stringify(recipe));
-                        setEnableSave(true);
-                        return;
-                    }
-                    return;
-                case RECIPE_LABELS.GRIND_RPM:
-                    if (!isNaN(Number(value))) {
-                        recipe!.grindRPM = Number(value);
-                        setRecipeInJSON(JSON.stringify(recipe));
-                        setEnableSave(true);
-                        return;
+        if (recipe === null) return;
 
-                    }
-                    return;
-                case RECIPE_LABELS.RATIO:
-                    if (!isNaN(Number(value))) {
-                        let val = Number(value)
-                        recipe!.setRatio(val);
-                        setRecipeInJSON(JSON.stringify(recipe));
-                        setEnableSave(true);
-                        return;
-                    }
-                    return;
-                case RECIPE_LABELS.DOSE:
-                    if (!isNaN(Number(value))) {
-                        let val = Number(value)
-                        recipe!.setDosage(val);
-                        setRecipeInJSON(JSON.stringify(recipe));
-                        setEnableSave(true);
-                        return;
-                    }
-                    return;
-                case RECIPE_LABELS.XID:
-                    recipe!.xid = value;
-                    setRecipeInJSON(JSON.stringify(recipe));
-                    setEnableSave(true);
-                    return;
-                case RECIPE_LABELS.TITLE:
-                    recipe!.title = value;
-                    setTitleChanged(true);
-                    setRecipeInJSON(JSON.stringify(recipe));
-                    setEnableSave(true);
-                    return;
-                case RECIPE_LABELS.CUP:
-                    recipe!.cupType = Number(value);
-                    setRecipeInJSON(JSON.stringify(recipe));
+        // Recipe settings
+        const fieldConfigs: Record<string, {
+            requiresNumber: boolean;
+            update: (r: Recipe, val: string) => void;
+        }> = {
+            [RECIPE_LABELS.GRINDER]: {
+                requiresNumber: true,
+                update: (r: Recipe, val: string) => {
+                    r.grinder = val === "1";
                     setKey((prev) => prev + 1);
-                    setEnableSave(true);
-                    return;
-                case RECIPE_LABELS.VOLUME:
-                    if (pourNumber !== undefined) {
-                        if (!isNaN(Number(value))) {
-                            recipe!.pours[pourNumber].volume = Number(value);
-                            setRecipeInJSON(() => JSON.stringify(recipe));
-                            setEnableSave(true);
-                        }
-                    }
-                    return;
-                case RECIPE_LABELS.TEMPERATURE:
-                    if (pourNumber !== undefined) {
-                        if (!isNaN(Number(value))) {
-                            recipe!.pours[pourNumber].temperature = Number(value);
-                            setRecipeInJSON(JSON.stringify(recipe));
-                            setEnableSave(true);
-                            return;
-                        }
-                    }
-                    return;
-                case RECIPE_LABELS.FLOW_RATE:
-                    if (pourNumber !== undefined) {
-                        if (!isNaN(Number(value))) {
-                            recipe!.pours[pourNumber].flowRate = Number(value);
-                            setRecipeInJSON(JSON.stringify(recipe));
-                            setEnableSave(true);
-                            return;
-                        }
-                    }
-                    return;
-                case RECIPE_LABELS.PAUSING:
-                    if (pourNumber !== undefined) {
-                        if (!isNaN(Number(value))) {
-                            recipe!.pours[pourNumber].pauseTime = Number(value);
-                            setRecipeInJSON(JSON.stringify(recipe));
-                            setEnableSave(true);
-                            return;
-                        }
-                    }
-                    return;
-                case RECIPE_LABELS.PATTERN:
-                    if (pourNumber !== undefined) {
-                        if (!isNaN(Number(value))) {
-                            recipe!.pours[pourNumber].pourPattern = Number(value);
-                            setRecipeInJSON(JSON.stringify(recipe));
-                            setEnableSave(true);
-                            return;
-                        }
-                    }
-                    return;
-                default:
-                    throw new Error("Unknown Edit Recipe Input field");
+                }
+            },
+            [RECIPE_LABELS.GRIND_SIZE]: {
+                requiresNumber: true,
+                update: (r: Recipe, val: string) => r.grindSize = Number(val)
+            },
+            [RECIPE_LABELS.GRIND_RPM]: {
+                requiresNumber: true,
+                update: (r: Recipe, val: string) => r.grindRPM = Number(val)
+            },
+            [RECIPE_LABELS.RATIO]: {
+                requiresNumber: true,
+                update: (r: Recipe, val: string) => r.setRatio(Number(val))
+            },
+            [RECIPE_LABELS.DOSE]: {
+                requiresNumber: true,
+                update: (r: Recipe, val: string) => r.setDosage(Number(val))
+            },
+            [RECIPE_LABELS.XID]: {
+                requiresNumber: false,
+                update: (r: Recipe, val: string) => r.xid = val
+            },
+            [RECIPE_LABELS.TITLE]: {
+                requiresNumber: false,
+                update: (r: Recipe, val: string) => {
+                    r.title = val;
+                    setTitleChanged(true);
+                }
+            },
+            [RECIPE_LABELS.CUP]: {
+                requiresNumber: false,
+                update: (r: Recipe, val: string) => {
+                    r.cupType = Number(val);
+                    setKey((prev) => prev + 1);
+                }
             }
-        }
-    }
+        };
 
+        // Handle pour-specific settings
+        const pourFields: Record<string, (r: Recipe, val: string, pourNum: number) => void> = {
+            [RECIPE_LABELS.VOLUME]: (r: Recipe, val: string, pourNum: number) =>
+                r.pours[pourNum].volume = Number(val),
+            [RECIPE_LABELS.TEMPERATURE]: (r: Recipe, val: string, pourNum: number) =>
+                r.pours[pourNum].temperature = Number(val),
+            [RECIPE_LABELS.FLOW_RATE]: (r: Recipe, val: string, pourNum: number) =>
+                r.pours[pourNum].flowRate = Number(val),
+            [RECIPE_LABELS.PAUSING]: (r: Recipe, val: string, pourNum: number) =>
+                r.pours[pourNum].pauseTime = Number(val),
+            [RECIPE_LABELS.PATTERN]: (r: Recipe, val: string, pourNum: number) =>
+                r.pours[pourNum].pourPattern = Number(val),
+            [RECIPE_LABELS.AGITATION_BEFORE]: (r: Recipe, val: string, pourNum: number) =>
+                r.pours[pourNum].setAgitationBefore(val === "1"),
+            [RECIPE_LABELS.AGITATION_AFTER]: (r: Recipe, val: string, pourNum: number) =>
+                r.pours[pourNum].setAgitationAfter(val === "1")
+        };
+
+        // Handle regular fields
+        const fieldConfig = fieldConfigs[label];
+        if (fieldConfig) {
+            // Skip validation for non-numeric fields or validate numeric ones
+            if (!fieldConfig.requiresNumber || !isNaN(Number(value))) {
+                fieldConfig.update(recipe, value);
+                setRecipeInJSON(JSON.stringify(recipe));
+                setEnableSave(true);
+            }
+            return;
+        }
+
+        // Handle pour-specific fields
+        const pourField = pourFields[label];
+        if (pourField) {
+            if (pourNumber !== undefined && !isNaN(Number(value))) {
+                pourField(recipe, value, pourNumber);
+                setRecipeInJSON(JSON.stringify(recipe));
+                setEnableSave(true);
+            }
+            return;
+        }
+
+        throw new Error("Unknown Edit Recipe Input field");
+    }
 
     return (
         <>
@@ -516,10 +480,10 @@ export default function editRecipe() {
                                                     <>
                                                         <MyButtonGroup
                                                             initialValue={pour.getAgitationBefore() ? "1" : "0"}
-                                                            label={RECIPE_LABELS.AGITATION_AFTER} size="$4"
+                                                            label={RECIPE_LABELS.AGITATION_BEFORE} size="$4"
                                                             minWidth={"$11"}
                                                             orientation="horizontal"
-                                                            onToggle={(val) => updateAgitation(index, true, val === "1")}
+                                                            onToggle={(val) => editInputComplete(RECIPE_LABELS.AGITATION_BEFORE, val, index)}
                                                             buttons={ON_OFF_BUTTON_CONFIG.buttons}
                                                             getLabelText={ON_OFF_BUTTON_CONFIG.getLabelText}
 
@@ -529,7 +493,7 @@ export default function editRecipe() {
                                                             label={RECIPE_LABELS.AGITATION_AFTER} size="$4"
                                                             minWidth={"$11"}
                                                             orientation="horizontal"
-                                                            onToggle={(val) => updateAgitation(index, false, val === "1")}
+                                                            onToggle={(val) => editInputComplete(RECIPE_LABELS.AGITATION_AFTER, val, index)}
                                                             buttons={ON_OFF_BUTTON_CONFIG.buttons}
                                                             getLabelText={ON_OFF_BUTTON_CONFIG.getLabelText}
                                                         />
