@@ -46,8 +46,8 @@ export class XBloomRecipe {
 
             let xid = this.xbRecipeJSON.recipeVo.podsVo?.id ?? "";
 
-            recipe.setRatio(ratio);
-            recipe.setDosage(dosage);
+            recipe.ratio = ratio;
+            recipe.dosage = dosage;
             recipe.title = title;
             recipe.grindSize = grindSize;
             recipe.xid = xid;

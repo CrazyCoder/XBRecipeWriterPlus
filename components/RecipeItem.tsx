@@ -47,7 +47,7 @@ export default function RecipeItem(props: {
                     <XStack flex={1} justifyContent='space-evenly' width="100%" flexDirection='row'>
                         <YStack>
                             <Circle size="$7" borderColor="#ffa592" borderWidth={1}>
-                                <Text fontSize={30} fontWeight={200}>{"1:" + props.recipe.getRatio()}</Text></Circle>
+                                <Text fontSize={30} fontWeight={200}>{"1:" + props.recipe.ratio}</Text></Circle>
                             <Text alignSelf='center'>Ratio</Text>
                         </YStack>
                         <YStack>

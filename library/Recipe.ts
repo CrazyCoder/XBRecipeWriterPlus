@@ -54,8 +54,8 @@ class Recipe {
     public title: string = "";
     public xid: string = "";
     public key: string = ""
-    private ratio: number = -1;
-    private dosage: number = 15;
+    public ratio: number = -1;
+    public dosage: number = 15;
     public grindSize: number = -1;
     public grindRPM: number = 120;
     public grinder: boolean = true;
@@ -123,14 +123,6 @@ class Recipe {
         }
     }
 
-    public setRatio(ratio: number) {
-        this.ratio = ratio;
-    }
-
-    public getRatio(): number {
-        return this.ratio;
-    }
-
     public generateNewUUID() {
         this.uuid = (uuid.v4() as string);
         this.key = this.uuid;
@@ -141,14 +133,6 @@ class Recipe {
         for (let i = 0; i < this.pours.length; i++) {
             this.pours[i].pourNumber = i + 1;
         }
-    }
-
-    public setDosage(dosage: number) {
-        this.dosage = dosage;
-    }
-
-    public getDosage(): number {
-        return this.dosage;
     }
 
     public getTotalVolume(): number {
@@ -304,7 +288,7 @@ class Recipe {
             data.push(GRINDER_OFF); // setting grind size to 41 (0x29) disables the grinder
         }
 
-        data.push(this.getRatio());
+        data.push(this.ratio);
         let checkSum = this.calculateCRC(data);
         console.log("CheckSum:" + this.convertNumberArrayToHex(data));
         console.log("CheckSum:" + checkSum + ":" + this.checksum);

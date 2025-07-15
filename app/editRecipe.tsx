@@ -264,11 +264,11 @@ export default function editRecipe() {
             },
             [RECIPE_LABELS.RATIO]: {
                 requiresNumber: true,
-                update: (r: Recipe, val: string) => r.setRatio(Number(val))
+                update: (r: Recipe, val: string) => r.ratio = Number(val)
             },
             [RECIPE_LABELS.DOSE]: {
                 requiresNumber: true,
-                update: (r: Recipe, val: string) => r.setDosage(Number(val))
+                update: (r: Recipe, val: string) => r.dosage = Number(val)
             },
             [RECIPE_LABELS.XID]: {
                 requiresNumber: false,
@@ -362,12 +362,12 @@ export default function editRecipe() {
                                     <TooltipComponent
                                         content="This is a 8 character unique identifier for the recipe that is used by the mobile app to look up the recipe online. It can be any alphanumeric value. Importantly, if you don't want the mobile app to show the wrong recipe, I'd probably change this. But if you do that, it won't show any recipe at all in the app (although it should still work on the machine) "/>
                                 </XStack>
-                                <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.getDosage()}
+                                <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.dosage}
                                                 minimumValue={1} maximumValue={getRecipe()!.isTea() ? 10 : 25} step={1}
                                                 label={RECIPE_LABELS.DOSE}
                                                 maxLength={2} inputMode="numeric"
                                                 onValidEditFunction={editInputComplete}/>
-                                <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.getRatio()}
+                                <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.ratio}
                                                 minimumValue={5} maximumValue={100} step={1} label={RECIPE_LABELS.RATIO}
                                                 maxLength={3}
                                                 inputMode="numeric" onValidEditFunction={editInputComplete}/>
