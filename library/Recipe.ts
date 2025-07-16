@@ -12,6 +12,7 @@ export const CUP_TYPE = {
 export const GRINDER_OFF: number = 41;
 // Grind size is stored on the NFC card with offset (grind_size_value - 40)
 export const GRIND_SIZE_OFFSET = 40;
+export const DEFAULT_GRIND_SIZE = 50;
 
 const POLY_TABLE = [
     0x00, 0x5E, 0xBC, 0xE2, 0x61, 0x3F, 0xDD, 0x83,
@@ -282,10 +283,15 @@ class Recipe {
             data.push(pour.getFlowRate());
         }
 
-        if (this.grinder) {
-            data.push(this.grindSize - GRIND_SIZE_OFFSET);
+        if (this.isTea()) {
+            // tea cards use the default grind size
+            data.push(DEFAULT_GRIND_SIZE - GRIND_SIZE_OFFSET);
         } else {
-            data.push(GRINDER_OFF); // setting grind size to 41 (0x29) disables the grinder
+            if (this.grinder) {
+                data.push(this.grindSize - GRIND_SIZE_OFFSET);
+            } else {
+                data.push(GRINDER_OFF); // setting grind size to 41 (0x29) disables the grinder
+            }
         }
 
         data.push(this.ratio);
