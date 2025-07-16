@@ -416,7 +416,7 @@ export default function editRecipe() {
                                     <XStack>
                                         <TotalVolumeComponent recipe={getRecipe()!}/>
                                         <TooltipComponent
-                                            content={"This field shows the total volume of all of the pours vs the total volume based on your dosage and ratio (sum of all pour volumes / dose * ratio). The numbers need to match for the valid recipe that the machine will accept. Ajust pour volumes, ratio and dose as needed."}/>
+                                            content={"This field shows the total volume of all of the pours vs the total volume based on your dosage and ratio (sum of all pour volumes / dose * ratio). The numbers need to match for the valid recipe that the machine will accept. Adjust pour volumes, ratio and dose as needed."}/>
                                     </XStack>
                                     <Button borderWidth={2}
                                             pressStyle={{backgroundColor: "#de4f00", borderColor: "gray"}}
@@ -523,7 +523,6 @@ export default function editRecipe() {
                                           progress={writeProgress}></AndroidNFCDialog> : ""}
                 </YStack>
                 : ""}
-
         </>
     )
 }
