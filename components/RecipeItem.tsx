@@ -1,6 +1,6 @@
-import Recipe from '@/library/Recipe'
+import Recipe, {CUP_TYPE} from '@/library/Recipe'
 import React, {useState} from 'react'
-import {Circle, H5, Text, XStack, YStack} from 'tamagui'
+import {Circle, Text, XStack, YStack} from 'tamagui'
 import {Pressable, useColorScheme} from 'react-native'
 
 export default function RecipeItem(props: {
@@ -15,7 +15,7 @@ export default function RecipeItem(props: {
         props.onPress();
     }
 
-    function getStyle(): any {
+    function getStyle(cup: number): any {
         let s = {backgroundColor: "#d1d1d1", borderWidth: 2, borderRadius: 20, borderColor: "#ffa592", width: "100%"};
         if (pressed) {
             if (colorScheme === "light") {
@@ -26,13 +26,25 @@ export default function RecipeItem(props: {
                 s.borderColor = "#ff6302";
             }
         } else {
-            if (colorScheme === "light") {
-                s.backgroundColor = "#ffcfc5"
-                s.borderColor = "#ffa592";
+            switch (cup) {
+                case CUP_TYPE.TEA:
+                    if (colorScheme === "light") {
+                        s.backgroundColor = "#f0e7d2"
+                        s.borderColor = "#c7b995";
+                    } else {
+                        s.backgroundColor = "#392F24";
+                        s.borderColor = "#7C5D40";
+                    }
+                    break;
+                default:
+                    if (colorScheme === "light") {
+                        s.backgroundColor = "#ffcfc5"
+                        s.borderColor = "#ffa592";
 
-            } else {
-                s.backgroundColor = "#898989";
-                s.borderColor = "#f4511e";
+                    } else {
+                        s.backgroundColor = "#898989";
+                        s.borderColor = "#f4511e";
+                    }
             }
         }
         return s;
@@ -40,10 +52,19 @@ export default function RecipeItem(props: {
 
     return (
         <YStack padding="$2">
-            <Pressable style={getStyle()} onLongPress={() => setShowDialog(true)} onPressIn={() => setPressed(true)}
+            <Pressable style={getStyle(props.recipe.cupType)} onLongPress={() => setShowDialog(true)}
+                       onPressIn={() => setPressed(true)}
                        onPress={() => onPress()} onPressOut={() => setPressed(false)}>
                 <YStack paddingHorizontal="$2" paddingVertical="$1" alignItems='center'>
-                    <H5 paddingVertical="$1">{props.recipe.title}</H5>
+                    <Text
+                        numberOfLines={1}
+                        ellipsizeMode="middle"
+                        paddingVertical="$1"
+                        fontSize="$4"
+                        textAlign="center"
+                    >
+                        {props.recipe.title}
+                    </Text>
                     <XStack flex={1} justifyContent='space-evenly' width="100%" flexDirection='row'>
                         <YStack>
                             <Circle size="$7" borderColor="#ffa592" borderWidth={1}>
