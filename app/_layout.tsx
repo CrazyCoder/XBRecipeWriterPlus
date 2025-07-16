@@ -49,17 +49,16 @@ export default function RootLayout() {
                 options={{
                     debug: false,
                     resetOnBackground: true,
-                }}
-            >
-                <TamaguiProvider config={config}>
-                    <Theme name={colorScheme}>
-                        <ThemeProvider
-                            value={colorScheme === "light" ? LightTheme : DarkTheme}
-                        >
-                            <MySafeAreaView>
-                                <SafeAreaProvider>
-                                    <GestureHandlerRootView>
-                                        <PortalProvider shouldAddRootHost>
+                }}>
+                <GestureHandlerRootView style={{flex: 1}}>
+                    <PortalProvider shouldAddRootHost={true}>
+                        <SafeAreaProvider>
+                            <TamaguiProvider config={config}>
+                                <Theme name={colorScheme}>
+                                    <ThemeProvider
+                                        value={colorScheme === "light" ? LightTheme : DarkTheme}
+                                    >
+                                        <MySafeAreaView>
                                             <Stack
                                                 screenOptions={{
                                                     headerStyle: {
@@ -75,13 +74,13 @@ export default function RootLayout() {
                                             </Stack>
                                             <Toasts/>
                                             <StatusBar hidden={false} translucent={true}/>
-                                        </PortalProvider>
-                                    </GestureHandlerRootView>
-                                </SafeAreaProvider>
-                            </MySafeAreaView>
-                        </ThemeProvider>
-                    </Theme>
-                </TamaguiProvider>
+                                        </MySafeAreaView>
+                                    </ThemeProvider>
+                                </Theme>
+                            </TamaguiProvider>
+                        </SafeAreaProvider>
+                    </PortalProvider>
+                </GestureHandlerRootView>
             </ShareIntentProvider>
         </>
     );
