@@ -18,6 +18,7 @@ import NFC from "@/library/NFC";
 import Svg, {Path} from "react-native-svg";
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
+import {XBloomRecipe} from "@/library/XBloomRecipe";
 
 // @ts-ignore-next-line
 import SwipeableFlatList from 'react-native-swipeable-list';
@@ -56,7 +57,6 @@ export default function HomeScreen() {
             title: 'Recipes',
             headerShown: true,
             headerRight: () => <IconButton onPress={() => readCard()} title="" icon={readCardIcon()}/>
-            ,
         })
     }, [navigation]);
 
@@ -102,7 +102,27 @@ export default function HomeScreen() {
 
     useEffect(() => {
         let recipes = db.retrieveAllRecipes();
-        // var xbloom = new XBloomRecipe("CMcQuqFPRw9E2xDQvFAZkg==");
+
+        // when testing with an empty database, load sample recipes by IDs
+        // (use `EXPO_PUBLIC_LOAD_RECIPE=CMcQuqFPRw9E2xDQvFAZkg==,KrTeDcmAIbv/0jrYKS4UtQ==,CpY80jg3CuKrSiO3YLruHg==` in .env.local)
+        if (__DEV__ && process.env.EXPO_PUBLIC_LOAD_RECIPE !== undefined && recipes === null) {
+            const recipeIds = process.env.EXPO_PUBLIC_LOAD_RECIPE.split(',');
+
+            for (const recipeId of recipeIds) {
+                let xbloom = new XBloomRecipe(recipeId.trim());
+                xbloom.fetchRecipeDetail().then(() => {
+                    if (xbloom) {
+                        let rec = xbloom?.getRecipe();
+                        if (rec && !db.doesTitleExist(rec.title)) {
+                            db.insertRecipe(rec);
+                        }
+                    }
+                });
+            }
+
+            recipes = db.retrieveAllRecipes();
+        }
+
         if (recipes && recipes.length > 0) {
             setRecipesJSON(JSON.stringify(recipes));
         } else {
@@ -110,12 +130,16 @@ export default function HomeScreen() {
         }
     }, [key]);
 
-    /*useEffect(() => {
-        const recipes = getRecipes();
-        if (recipes && recipes.length > 0) {
-            router.push({pathname: '/editRecipe', params: {recipeJSON: JSON.stringify(recipes[0])}});
-        }
-    }, [recipesJSON]);*/
+    // loads the first recipe automatically for debugging / testing
+    // (use `EXPO_PUBLIC_DEBUG_RECIPE_VIEW=true` in .env.local)
+    if (__DEV__ && process.env.EXPO_PUBLIC_DEBUG_RECIPE_VIEW === "true") {
+        useEffect(() => {
+            const recipes = getRecipes();
+            if (recipes && recipes.length > 0) {
+                router.push({pathname: '/editRecipe', params: {recipeJSON: JSON.stringify(recipes[0])}});
+            }
+        }, [recipesJSON]);
+    }
 
     function getRecipes(): Recipe[] {
         let recipes = [];
@@ -125,8 +149,7 @@ export default function HomeScreen() {
                 recipes.push(new Recipe(undefined, JSON.stringify(recipeData[i])));
             }
         }
-        return recipes.sort((a: Recipe, b: Recipe) => a.title.localeCompare(b.title))
-            ;
+        return recipes.sort((a: Recipe, b: Recipe) => a.title.localeCompare(b.title));
     }
 
 
