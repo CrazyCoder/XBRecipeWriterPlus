@@ -51,7 +51,7 @@ export class XBloomRecipe {
             recipe.title = title;
             recipe.grindSize = grindSize;
             recipe.xid = xid;
-            recipe.grindRPM = (this.xbRecipeJSON.recipeVo.rpm && this.xbRecipeJSON.recipeVo.rpm > 0 && this.xbRecipeJSON.recipeVo.rpm <= 120)
+            recipe.grindRPM = (this.xbRecipeJSON.recipeVo.rpm && this.xbRecipeJSON.recipeVo.rpm >= 60 && this.xbRecipeJSON.recipeVo.rpm <= 120)
                 ? this.xbRecipeJSON.recipeVo.rpm
                 : 120;
 
