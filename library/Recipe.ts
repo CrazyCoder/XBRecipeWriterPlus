@@ -3,11 +3,12 @@ import Pour from "./Pour";
 import uuid from 'react-native-uuid';
 
 export const CUP_TYPE = {
-    XPOD: 0x00,
-    OMNI: 0x02,
-    TEA: 0x23,  // as on original tea recipe cards, 0x03 also works as tea
-    OTHER: 0x04 // works as coffee, probably the same as Omni
+    XPOD:  0x00,
+    OTHER: 0x01,
+    OMNI:  0x02, // no overflow protection
+    TEA:   0x03  // high bits may contain the default number of cups to brew
 }
+
 // This byte value for the grind size disables the grinder
 export const GRINDER_OFF: number = 41;
 // Grind size is stored on the NFC card with offset (grind_size_value - 40)
@@ -65,7 +66,8 @@ class Recipe {
     public prefixArray: number[] = [];
     public suffixArray: number[] = [];
     public cupType: number = CUP_TYPE.XPOD;
-
+    public backup: number[] = [];
+    public uid: number[] = [];
 
     constructor(data?: number[], json?: string) {
         this.uuid = (uuid.v4() as string);
@@ -81,6 +83,8 @@ class Recipe {
             this.grindSize = jsonRecipe.grindSize;
             this.cupType = jsonRecipe.cupType ?? CUP_TYPE.XPOD;
             this.grinder = jsonRecipe.grinder ?? true;
+            this.backup = jsonRecipe.backup;
+            this.uid = jsonRecipe.uid;
 
             if (jsonRecipe.uuid) {
                 this.uuid = jsonRecipe.uuid;
@@ -195,11 +199,11 @@ class Recipe {
             await nfc.init();
             await nfc.open();
             let hash = await nfc.readHash();
-            console.log("Read Hash:" + this.convertNumberArrayToHex(hash!));
+            console.log("Read Hash:" + Recipe.convertNumberArrayToHex(hash!));
 
             if (hash) {
                 let data = this.getData(hash);
-                console.log(this.convertNumberArrayToHex(data));
+                console.log(Recipe.convertNumberArrayToHex(data));
                 await nfc.writeCard(data, progressCallBack);
             }
         } catch (e) {
@@ -218,15 +222,16 @@ class Recipe {
             await nfc.init();
             await nfc.open();
             await progressCallBack(20)
+            let uid = await nfc.getUID();
             let data = await nfc.readCard(progressCallBack);
             await progressCallBack(90)
             await nfc.close();
             await progressCallBack(100)
             if (data) {
-                console.log(nfc.convertNumberArrayToHex(data));
-
+                console.log(Recipe.convertNumberArrayToHex(data));
+                this.uid = uid ?? [];
+                this.backup = data;
                 this.parseData(data);
-
                 console.log(this.toString());
                 return true;
             } else {
@@ -250,7 +255,7 @@ class Recipe {
         } else {
             data = data.concat(this.prefixArray);
         }
-        console.log("Prefix:" + this.convertNumberArrayToHex(data));
+        console.log("Prefix:" + Recipe.convertNumberArrayToHex(data));
 
         data = data.concat(this.convertXIDToData(this.xid));
 
@@ -296,19 +301,10 @@ class Recipe {
 
         data.push(this.ratio);
         let checkSum = this.calculateCRC(data);
-        console.log("CheckSum:" + this.convertNumberArrayToHex(data));
+        console.log("CheckSum:" + Recipe.convertNumberArrayToHex(data));
         console.log("CheckSum:" + checkSum + ":" + this.checksum);
         data.push(checkSum);
 
-        data.push(0x00);
-        data.push(0x00); //this is usually F4 (but not always), but it doesn't seem to matter
-
-        /*var suffix = [];
-        for (let i = 0; i < this.suffixArray.length; i++) {
-           suffix[i] = 0;
-        }*/
-        //data = data.concat(suffix);
-        //data = data.concat(this.suffixArray);
         data.splice(0, 32);
         return data
     }
@@ -346,8 +342,8 @@ class Recipe {
             let pourVolumeMap = [];
             for (let i = 0; i < this.pours.length; i++) {
                 pourVolumeMap.push({
-                    pourIndex: i,
-                    origVolume: this.pours[i].volume,
+                    pourIndex:    i,
+                    origVolume:   this.pours[i].volume,
                     scaledVolume: this.pours[i].volume * scalingFactor,
                     roundedScaledVolume: Math.round(this.pours[i].volume * scalingFactor)
                 });
@@ -382,7 +378,7 @@ class Recipe {
         }
     }
 
-    public convertNumberArrayToHex(array: number[]): string {
+    public static convertNumberArrayToHex(array: number[]): string {
         let hexOutput = ''
         for (let i = 0; i < array.length; i++) {
             let hex = array[i].toString(16);
@@ -513,6 +509,10 @@ class Recipe {
 
     public toString(): string {
         return `Recipe: ${this.title}
+    UID:    ${Recipe.convertNumberArrayToHex(this.uid)}
+    Backup: ${Recipe.convertNumberArrayToHex(this.backup)}
+    Prefix: ${Recipe.convertNumberArrayToHex(this.prefixArray)}
+    Suffix: ${Recipe.convertNumberArrayToHex(this.suffixArray)}
     XID: ${this.xid}
     Cup: ${this.cupType}
     Dose: ${this.dosage}

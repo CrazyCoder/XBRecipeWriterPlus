@@ -1,6 +1,7 @@
 import {toast} from '@backpackapp-io/react-native-toast';
 import {Platform} from 'react-native';
 import NfcManager, {NfcTech} from 'react-native-nfc-manager';
+import Recipe from "@/library/Recipe";
 
 global.Buffer = require('buffer').Buffer;
 
@@ -23,18 +24,6 @@ class NFC {
         } catch (ex) {
             console.error('NFC Manager failed to start', ex);
         }
-    }
-
-    public convertNumberArrayToHex(array: number[]): string {
-        let hexOutput = ''
-        for (let i = 0; i < array.length; i++) {
-            let hex = array[i].toString(16);
-            if (hex.length == 1) {
-                hex = '0' + hex;
-            }
-            hexOutput += "" + hex;
-        }
-        return hexOutput;
     }
 
     async readHash(): Promise<number[] | null> {
@@ -77,7 +66,6 @@ class NFC {
 
 
     async getSystemInfo(): Promise<NfcSystemInfo | null> {
-
         if (Platform.OS === 'ios') {
             return await NfcManager.iso15693HandlerIOS.getSystemInfo(34);
         } else {
@@ -104,7 +92,7 @@ class NFC {
     async readMultipleBlocks(flags: number, blockNumber: number, blockCount: number): Promise<number[] | null> {
         if (Platform.OS === 'ios') {
             let data = await NfcManager.iso15693HandlerIOS.readMultipleBlocks({
-                flags: flags,
+                flags:      flags,
                 blockNumber: blockNumber,
                 blockCount: blockCount
             });
@@ -123,15 +111,32 @@ class NFC {
             if (uid && uid.length > 0) {
                 console.log("Reading Multiple Blocks");
                 console.log("Flags:" + flags);
+                console.log("UID:" + Recipe.convertNumberArrayToHex(uid));
                 console.log("BlockNumber:" + blockNumber);
                 console.log("BlockCount:" + blockCount);
 
                 let resp: number[] = await NfcManager.nfcVHandler.transceive([flags, 0x23, ...uid, blockNumber, blockCount - 1]);
 
-                if (resp && resp.length > 0 && resp[0] == 0) {
+                if (resp && resp.length && resp.length > 0 && resp[0] == 0) {
                     resp.splice(0, 1);
-                    console.log(JSON.stringify(this.convertNumberArrayToHex(resp)));
+                    console.log(Recipe.convertNumberArrayToHex(resp));
                     return resp;
+                } else {
+                    console.log("Fallback: card doesn't support 0x23 (READ MULTIPLE BLOCKS), using 0x20 (READ SINGLE BLOCK) in a loop...");
+                    // ---------- fallback: READ SINGLE BLOCK (0x20) in a loop ----------
+                    const data: number[] = [];
+                    for (let i = 0; i < blockCount; i++) {
+                        const bn = blockNumber + i;
+                        const singleCmd = [flags, 0x20, ...uid, bn];   // 0x20 = Read Single Block
+                        let resp: number[] = await NfcManager.nfcVHandler.transceive(singleCmd);
+
+                        if (!resp?.length || resp[0] !== 0x00) {
+                            throw new Error(`Read failed at block ${bn} (status 0x${resp?.[0]?.toString(16) ?? '??'})`);
+                        }
+                        data.push(...resp.slice(1));  // append block payload
+                    }
+                    console.log(Recipe.convertNumberArrayToHex(data));
+                    return data;
                 }
             }
         }
@@ -165,7 +170,7 @@ class NFC {
     async writeSingleBlock(flags: number, blockNumber: number, dataBlock: number[]): Promise<void> {
         if (Platform.OS === 'ios') {
             await NfcManager.iso15693HandlerIOS.writeSingleBlock({
-                flags: flags,
+                flags:     flags,
                 blockNumber: blockNumber,
                 dataBlock: dataBlock
             })
