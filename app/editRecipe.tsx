@@ -4,7 +4,7 @@ import Recipe, {CUP_TYPE} from "@/library/Recipe";
 import {AntDesign} from "@expo/vector-icons";
 import {Icon, IconElement} from "@ui-kitten/components";
 import {useLocalSearchParams, useNavigation} from "expo-router";
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import {Alert, Platform, Pressable, useColorScheme, useWindowDimensions} from "react-native";
 
 
@@ -30,6 +30,14 @@ export default function editRecipe() {
     const [writeProgress, setWriteProgress] = useState(0);
     const [showAndroidNFCDialog, setShowAndroidNFCDialog] = useState(false);
     const [key, setKey] = useState(0);
+
+    // Cache the Recipe object using useMemo
+    const cachedRecipe = useMemo<Recipe | null>(() => {
+        if (recipeInJSON && recipeInJSON !== "") {
+            return new Recipe(undefined, recipeInJSON);
+        }
+        return null;
+    }, [recipeInJSON]);
 
     const ON_OFF_BUTTON_CONFIG = {
         buttons: [1, 0],
@@ -100,10 +108,7 @@ export default function editRecipe() {
     );
 
     function getRecipe(): Recipe | null {
-        if (recipeInJSON && recipeInJSON !== "") {
-            return new Recipe(undefined, recipeInJSON);
-        }
-        return null;
+        return cachedRecipe;
     }
 
     useEffect(() => {
