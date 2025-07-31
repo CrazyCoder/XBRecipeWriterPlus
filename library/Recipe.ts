@@ -132,8 +132,28 @@ class Recipe {
 
     }
 
-    public addPour(pourNumber: number) {
-        const newPour = new Pour(pourNumber + 2, 1, 39, 30, 0, 0, 0);
+    public addPour(pourNumber: number, copyFromPrevious: boolean = true) {
+        let newPour: Pour;
+
+        if (copyFromPrevious && this.pours.length > 0) {
+            // Get the previous pour to copy from
+            const previousPour = this.pours[pourNumber >= 0 ? pourNumber : this.pours.length - 1];
+
+            // Create new pour with copied parameters
+            newPour = new Pour(
+                pourNumber + 2,
+                previousPour.volume,
+                previousPour.temperature,
+                previousPour.flowRate,
+                previousPour.agitation,
+                previousPour.pourPattern,
+                previousPour.pauseTime
+            );
+        } else {
+            // Use default values
+            newPour = new Pour(pourNumber + 2, 1, 39, 30, 0, 0, 0);
+        }
+
         this.pours.splice(pourNumber + 1, 0, newPour);
         for (let i = 0; i < this.pours.length; i++) {
             this.pours[i].pourNumber = i + 1;
