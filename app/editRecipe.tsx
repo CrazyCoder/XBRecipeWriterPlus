@@ -311,7 +311,19 @@ export default function editRecipe() {
             },
             [RECIPE_LABELS.CUPS]:       {
                 requiresNumber: true,
-                update:         (r: Recipe, val: string) => r.defaultCups = Number(val)
+                update: (r: Recipe, val: string) => {
+                    let cups = Number(val);
+                    if (cups <= r.pours.length) {
+                        r.defaultCups = cups
+                    } else {
+                        Alert.alert('Pours mismatch', 'Please add more pours to match the number of steeps.', [
+                            {
+                                text:    'Ok',
+                                onPress: () => setKey((prev) => prev + 1)
+                            }
+                        ])
+                    }
+                }
             }
         };
 
@@ -433,7 +445,7 @@ export default function editRecipe() {
                                                            getLabelText={ON_OFF_BUTTON_CONFIG.getLabelText}
                                             />
                                             <TooltipComponent
-                                                content={"Disabling grinder is experimental. It sets grind size to 81 (instead of 80 max). However, machine will not accept the card with the grinder disabled. As a workaround, you can load any other recipe with the grinder enabled first, either via a shortcut button, another card or an app. Once any other recipe is already loaded, the card with disabled grinder will work and you'll see '--' for the grind size."}/>
+                                                content={"Disabling grinder is experimental. It sets grind size to 81 (instead of 80 max). However, machine will not accept the card with the grinder disabled. As a workaround, you can load any other recipe with the grinder enabled first, either via a shortcut button, another card or an app. Once any other recipe is already loaded, the card with disabled grinder will work and you'll see '--' for the grind size. At the moment there is no better way to disable grinder from the recipe card."}/>
                                         </XStack>
                                     </>
                                 )}
@@ -448,7 +460,7 @@ export default function editRecipe() {
                                                            getLabelText={CUPS_BUTTON_CONFIG.getLabelText}
                                             />
                                             <TooltipComponent
-                                                content={"Default number of tea cups/steeps (1 cup = 120ml). Use the knob on the machine to adjust the number before starting the recipe."}/>
+                                                content={"Default number of tea cups/steeps (1 cup = 120ml). Use the knob on the machine to adjust the number before starting the recipe. Machine will pour ~90ml, then wait for the specified pause time to steep, then add ~30ml to trigger the siphon and drain the Tea pod. If it drains prematurely, reduce the volume of the pours. It can help with the tea leafs that take a lot of water and start to occupy the pod volume, especially in the last pours."}/>
                                         </XStack>
                                     </>
                                 )}
