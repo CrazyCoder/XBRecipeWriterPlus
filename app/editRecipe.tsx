@@ -36,20 +36,26 @@ export default function editRecipe() {
         getLabelText: (id: number) => id === 1 ? "On" : "Off"
     };
 
+    const CUPS_BUTTON_CONFIG = {
+        buttons:      [1, 2, 3],
+        getLabelText: (id: number) => id.toString()
+    };
+
     const RECIPE_LABELS = {
-        TITLE: "Title",
-        XID: "XID",
-        DOSE: "Dose (g)",
-        RATIO: "Ratio",
-        GRIND_SIZE: "Grind size",
-        GRIND_RPM: "Grind RPM",
-        GRINDER: "Grinder",
-        CUP: "Cup",
-        VOLUME: "Volume",
-        TEMPERATURE: "Temperature (°C)",
-        FLOW_RATE: "Flow rate (ml/s)",
-        PAUSING: "Pausing (s)",
-        PATTERN: "Pattern",
+        TITLE:           "Title",
+        XID:             "XID",
+        DOSE:            "Dose (g)",
+        RATIO:           "Ratio",
+        GRIND_SIZE:      "Grind size",
+        GRIND_RPM:       "Grind RPM",
+        GRINDER:         "Grinder",
+        CUP:             "Cup",
+        CUPS:            "Steeps",
+        VOLUME:          "Volume",
+        TEMPERATURE:     "Temperature (°C)",
+        FLOW_RATE:       "Flow rate (ml/s)",
+        PAUSING:         "Pausing (s)",
+        PATTERN:         "Pattern",
         AGITATION_BEFORE: "Agitation before",
         AGITATION_AFTER: "Agitation after"
     } as const;
@@ -116,7 +122,7 @@ export default function editRecipe() {
             if (id && progress === 100) {
                 toast("Writing Recipe to Card: 100%", {
                     id: id, styles: {
-                        view: {backgroundColor: 'green'},
+                        view: {backgroundColor: 'green'}
                     }
                 });
             } else {
@@ -153,9 +159,9 @@ export default function editRecipe() {
                 } else {
                     Alert.alert('Pour Volume Error', 'Your individual pour volumes must add up to the total volume', [
                         {
-                            text: 'Ok',
-                            onPress: () => console.log('Cancel Pressed'),
-                        },
+                            text:    'Ok',
+                            onPress: () => console.log('Cancel Pressed')
+                        }
                     ]);
                 }
             }
@@ -169,7 +175,7 @@ export default function editRecipe() {
     const writeNFC = (props: any): IconElement => (
         <Icon
             {...props}
-            name='upload-outline'
+            name="upload-outline"
         />
     );
 
@@ -197,6 +203,16 @@ export default function editRecipe() {
     function addPour(pourNumber: number) {
         let r = getRecipe();
         if (r) {
+            // Limit tea recipes to maximum 3 pours
+            if (r.isTea() && r.pours.length >= 3) {
+                Alert.alert('Pour Limit', 'Tea recipes are limited to a maximum of 3 pours', [
+                    {
+                        text:    'Ok',
+                        onPress: () => console.log('Pour limit reached')
+                    }
+                ]);
+                return;
+            }
             r.addPour(pourNumber);
             setRecipeInJSON(() => JSON.stringify(r));
             setKey((prev) => prev + 1);
@@ -219,9 +235,9 @@ export default function editRecipe() {
                 } else {
                     Alert.alert('Save Error', 'The title of \"' + recipe.title + "\" already exists. Please choose a different name", [
                         {
-                            text: 'Ok',
-                            onPress: () => console.log('Cancel Pressed'),
-                        },
+                            text:    'Ok',
+                            onPress: () => console.log('Cancel Pressed')
+                        }
                     ]);
                 }
             } else {
@@ -231,9 +247,9 @@ export default function editRecipe() {
         } else {
             Alert.alert('Pour Volume Error', 'Your individual pour volumes must add up to the total volume', [
                 {
-                    text: 'Ok',
-                    onPress: () => console.log('Cancel Pressed'),
-                },
+                    text:    'Ok',
+                    onPress: () => console.log('Cancel Pressed')
+                }
             ]);
         }
     }
@@ -247,7 +263,7 @@ export default function editRecipe() {
             requiresNumber: boolean;
             update: (r: Recipe, val: string) => void;
         }> = {
-            [RECIPE_LABELS.GRINDER]: {
+            [RECIPE_LABELS.GRINDER]:    {
                 requiresNumber: true,
                 update: (r: Recipe, val: string) => {
                     r.grinder = val === "1";
@@ -258,54 +274,58 @@ export default function editRecipe() {
                 requiresNumber: true,
                 update: (r: Recipe, val: string) => r.grindSize = Number(val)
             },
-            [RECIPE_LABELS.GRIND_RPM]: {
+            [RECIPE_LABELS.GRIND_RPM]:  {
                 requiresNumber: true,
                 update: (r: Recipe, val: string) => r.grindRPM = Number(val)
             },
-            [RECIPE_LABELS.RATIO]: {
+            [RECIPE_LABELS.RATIO]:      {
                 requiresNumber: true,
                 update: (r: Recipe, val: string) => r.ratio = Number(val)
             },
-            [RECIPE_LABELS.DOSE]: {
+            [RECIPE_LABELS.DOSE]:       {
                 requiresNumber: true,
                 update: (r: Recipe, val: string) => r.dosage = Number(val)
             },
-            [RECIPE_LABELS.XID]: {
+            [RECIPE_LABELS.XID]:        {
                 requiresNumber: false,
                 update: (r: Recipe, val: string) => r.xid = val
             },
-            [RECIPE_LABELS.TITLE]: {
+            [RECIPE_LABELS.TITLE]:      {
                 requiresNumber: false,
                 update: (r: Recipe, val: string) => {
                     r.title = val;
                     setTitleChanged(true);
                 }
             },
-            [RECIPE_LABELS.CUP]: {
+            [RECIPE_LABELS.CUP]:        {
                 requiresNumber: false,
                 update: (r: Recipe, val: string) => {
                     r.cupType = Number(val);
                     setKey((prev) => prev + 1);
                 }
+            },
+            [RECIPE_LABELS.CUPS]:       {
+                requiresNumber: true,
+                update:         (r: Recipe, val: string) => r.defaultCups = Number(val)
             }
         };
 
         // Handle pour-specific settings
         const pourFields: Record<string, (r: Recipe, val: string, pourNum: number) => void> = {
-            [RECIPE_LABELS.VOLUME]: (r: Recipe, val: string, pourNum: number) =>
-                r.pours[pourNum].volume = Number(val),
-            [RECIPE_LABELS.TEMPERATURE]: (r: Recipe, val: string, pourNum: number) =>
-                r.pours[pourNum].temperature = Number(val),
-            [RECIPE_LABELS.FLOW_RATE]: (r: Recipe, val: string, pourNum: number) =>
-                r.pours[pourNum].flowRate = Number(val),
-            [RECIPE_LABELS.PAUSING]: (r: Recipe, val: string, pourNum: number) =>
-                r.pours[pourNum].pauseTime = Number(val),
-            [RECIPE_LABELS.PATTERN]: (r: Recipe, val: string, pourNum: number) =>
-                r.pours[pourNum].pourPattern = Number(val),
+            [RECIPE_LABELS.VOLUME]:           (r: Recipe, val: string, pourNum: number) =>
+                                                  r.pours[pourNum].volume = Number(val),
+            [RECIPE_LABELS.TEMPERATURE]:      (r: Recipe, val: string, pourNum: number) =>
+                                                  r.pours[pourNum].temperature = Number(val),
+            [RECIPE_LABELS.FLOW_RATE]:        (r: Recipe, val: string, pourNum: number) =>
+                                                  r.pours[pourNum].flowRate = Number(val),
+            [RECIPE_LABELS.PAUSING]:          (r: Recipe, val: string, pourNum: number) =>
+                                                  r.pours[pourNum].pauseTime = Number(val),
+            [RECIPE_LABELS.PATTERN]:          (r: Recipe, val: string, pourNum: number) =>
+                                                  r.pours[pourNum].pourPattern = Number(val),
             [RECIPE_LABELS.AGITATION_BEFORE]: (r: Recipe, val: string, pourNum: number) =>
-                r.pours[pourNum].setAgitationBefore(val === "1"),
-            [RECIPE_LABELS.AGITATION_AFTER]: (r: Recipe, val: string, pourNum: number) =>
-                r.pours[pourNum].setAgitationAfter(val === "1")
+                                                  r.pours[pourNum].setAgitationBefore(val === "1"),
+            [RECIPE_LABELS.AGITATION_AFTER]:  (r: Recipe, val: string, pourNum: number) =>
+                                                  r.pours[pourNum].setAgitationAfter(val === "1")
         };
 
         // Handle regular fields
@@ -362,7 +382,7 @@ export default function editRecipe() {
                                         content="This is a 8 character unique identifier for the recipe that is used by the mobile app to look up the recipe online. It can be any alphanumeric value. Importantly, if you don't want the mobile app to show the wrong recipe, I'd probably change this. But if you do that, it won't show any recipe at all in the app (although it should still work on the machine)."/>
                                 </XStack>
                                 <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.dosage}
-                                                minimumValue={1} maximumValue={getRecipe()!.isTea() ? 10 : 25} step={1}
+                                                minimumValue={1} maximumValue={getRecipe()!.isTea() ? 10 : 31} step={1}
                                                 label={RECIPE_LABELS.DOSE}
                                                 maxLength={2} inputMode="numeric"
                                                 onValidEditFunction={editInputComplete}/>
@@ -395,7 +415,7 @@ export default function editRecipe() {
                                                    getLabelText={Recipe.getCupTypeText}
                                     />
                                     <TooltipComponent
-                                        content={"Omni type disables overflow protection. Other type is experimental, should work the same as Omni, but allows you to tell the difference between the recipes for custom drippers and will be set automatically from the recipes shared via a link if they specify such cup.\n\nxPod = 0x00, Omni = 0x02, Tea = 0x23 (0x03 also works as tea, but original cards use 0x23), Other = 0x04."}/>
+                                        content={"Omni type disables overflow protection. Other type is used for third-party brewers."}/>
                                 </XStack>
                                 {!getRecipe()!.isTea() && (
                                     <>
@@ -409,6 +429,21 @@ export default function editRecipe() {
                                             />
                                             <TooltipComponent
                                                 content={"Disabling grinder is experimental. It sets grind size to 81 (instead of 80 max). However, machine will not accept the card with the grinder disabled. As a workaround, you can load any other recipe with the grinder enabled first, either via a shortcut button, another card or an app. Once any other recipe is already loaded, the card with disabled grinder will work and you'll see '--' for the grind size."}/>
+                                        </XStack>
+                                    </>
+                                )}
+                                {getRecipe()!.isTea() && (
+                                    <>
+                                        <XStack>
+                                            <MyButtonGroup initialValue={getRecipe()!.defaultCups.toString()}
+                                                           label={RECIPE_LABELS.CUPS} size="$4" minWidth={"$5"}
+                                                           orientation="horizontal"
+                                                           onToggle={(val) => editInputComplete(RECIPE_LABELS.CUPS, val)}
+                                                           buttons={CUPS_BUTTON_CONFIG.buttons}
+                                                           getLabelText={CUPS_BUTTON_CONFIG.getLabelText}
+                                            />
+                                            <TooltipComponent
+                                                content={"Default number of tea cups/steeps (1 cup = 120ml). Use the knob on the machine to adjust the number before starting the recipe."}/>
                                         </XStack>
                                     </>
                                 )}
@@ -471,7 +506,7 @@ export default function editRecipe() {
 
                                                 <ValidatedInput setErrorFunction={setInputError}
                                                                 initialValue={pour.getPauseTime()} minimumValue={0}
-                                                                maximumValue={getRecipe()!.isTea() ? 255 : 59} step={1}
+                                                                maximumValue={getRecipe()!.isTea() ? 360 : 59} step={1}
                                                                 pourNumber={index} label={RECIPE_LABELS.PAUSING}
                                                                 maxLength={3}
                                                                 inputMode="numeric"

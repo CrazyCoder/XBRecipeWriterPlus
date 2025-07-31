@@ -69,6 +69,7 @@ export class XBloomRecipe {
                     break;
                 case 4:
                     recipe.cupType = CUP_TYPE.TEA
+                    recipe.defaultCups = pourCount
                     break;
                 default:
                     recipe.cupType = CUP_TYPE.XPOD

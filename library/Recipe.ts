@@ -47,7 +47,7 @@ const POLY_TABLE = [
     0xE9, 0xB7, 0x55, 0x0B, 0x88, 0xD6, 0x34, 0x6A,
     0x2B, 0x75, 0x97, 0xC9, 0x4A, 0x14, 0xF6, 0xA8,
     0x74, 0x2A, 0xC8, 0x96, 0x15, 0x4B, 0xA9, 0xF7,
-    0xB6, 0xE8, 0x0A, 0x54, 0xD7, 0x89, 0x6B, 0x35,
+    0xB6, 0xE8, 0x0A, 0x54, 0xD7, 0x89, 0x6B, 0x35
 ];
 
 
@@ -66,6 +66,7 @@ class Recipe {
     public prefixArray: number[] = [];
     public suffixArray: number[] = [];
     public cupType: number = CUP_TYPE.XPOD;
+    public defaultCups: number = 0;
     public backup: number[] = [];
     public uid: number[] = [];
 
@@ -79,9 +80,17 @@ class Recipe {
         }
         if (json) {
             let jsonRecipe = JSON.parse(json);
-            this.grindRPM = jsonRecipe.grindRPM;
+            this.grindRPM = jsonRecipe.grindRPM ?? 120;
             this.grindSize = jsonRecipe.grindSize;
             this.cupType = jsonRecipe.cupType ?? CUP_TYPE.XPOD;
+            this.defaultCups = jsonRecipe.defaultCups ?? jsonRecipe.pours.length ?? 3;
+            // fix incorrectly saved cup types from the first app version with Tea support
+            if (this.cupType === 0x23 || this.cupType === 0x13) {
+                this.defaultCups = (this.cupType & 0xF0) >> 4 + 1;
+                this.cupType = 0x03; // 0x03 is for Tea
+            } else if (this.cupType == 0x04) {
+                this.cupType = 0x01; // 0x01 is for Other
+            }
             this.grinder = jsonRecipe.grinder ?? true;
             this.backup = jsonRecipe.backup;
             this.uid = jsonRecipe.uid;
@@ -259,7 +268,8 @@ class Recipe {
 
         data = data.concat(this.convertXIDToData(this.xid));
 
-        data.push(this.cupType);
+        // reconstruct the byte again from the number of cups and cup type
+        data.push(((this.defaultCups - 1) << 4) | this.cupType);
 
         data.push(this.pours.length << 3);
         let pourNumber = 0;
@@ -269,22 +279,36 @@ class Recipe {
             data.push(pour.getTemperature());
             data.push(pour.getPourPattern());
             data.push(pour.getAgitation());
-            if (pour.getPauseTime() == 0) {
+
+            let pauseTime = pour.getPauseTime();
+
+            let waitSeconds = 0;
+            let waitMinutes = 0;
+
+            if (pauseTime > 255) {
+                if (pauseTime > 360) pauseTime = 360;
+                // Split into whole minutes and remaining seconds
+                waitMinutes = Math.floor(pauseTime / 60);
+                waitSeconds = pauseTime % 60;
+            } else {
+                waitSeconds = pauseTime;
+            }
+
+            if (waitSeconds === 0) {
                 data.push(0x00);
             } else {
-                data.push(256 + (0 - pour.getPauseTime()));
+                data.push(256 + (0 - waitSeconds));
             }
+
+            const wait_minutes_byte = (waitMinutes << 5);
             if (pourNumber === 1) {
-                data.push(this.dosage);   // 5th byte of the first pour stores the dose
-                if (this.grinder) {
-                    data.push(this.grindRPM); // 6th byte of the first pour stores the RPM
-                } else {
-                    data.push(0x00);
-                }
+                data.push(wait_minutes_byte | this.dosage);   // 5th byte of the first pour stores the dose and optional minutes of pause
+                data.push(this.grindRPM); // 6th byte of the first pour stores the RPM
             } else {
-                data.push(0x00);
+                data.push(wait_minutes_byte); // optional minutes of pause
                 data.push(0x00);
             }
+
             data.push(pour.getFlowRate());
         }
 
@@ -423,13 +447,11 @@ class Recipe {
 
         this.xid = this.convertDataToXID(data.slice(32, 39));
 
-        this.cupType = data[39];
-
-        // Cascara Coffee Cherry Tea card uses 0x13, 0x03 also works as tea
-        if (this.cupType == 0x13 || this.cupType == 0x03) {
-            console.log("Fixing 0x13 cup type to 0x23 (tea)");
-            this.cupType = CUP_TYPE.TEA;
-        }
+        let cup_type_and_default_tea_cups = data[39];
+        // high bits may contain the default number of tea cups (0x23 = 2 + 1 = 3 cups and tea cup type = 3)
+        this.defaultCups = (cup_type_and_default_tea_cups & 0xF0) >> 4 + 1;
+        // low bits is the cup/pod type
+        this.cupType = cup_type_and_default_tea_cups & 0x0F;
 
         // Tea recipe, use 5g dose by default
         if (this.isTea()) {
@@ -469,13 +491,23 @@ class Recipe {
                 volume = 90;
             }
 
-            const dose = data[index + 5]
-            const rpm = data[index + 6]
+            const dose_and_wait_minutes = data[index + 5];
+            // extract the 3-bit wait time in minutes (bits 5-7)
+            const waitMinutes = (dose_and_wait_minutes >> 5) & 0x07; // 0x07 = 0b00000111
 
-            if (dose !== 0 || rpm !== 0 && pourNum == 1) {
+            // add an optional minutes component to pause, limit to 360 seconds (used in Tea recipes with long steeps)
+            pause += waitMinutes * 60;
+            if (pause > 360) pause = 360;
+
+            // first pour contains dose and RPM data
+            if (pourNum == 1) {
+                // Extract the 5-bit dose value (bits 0-4)
+                const dose = dose_and_wait_minutes & 0x1F; // 0x1F = 0b00011111
+                const rpm = data[index + 6];
+
                 console.log(`Found dose/RPM data: ${pourNum}: ${Recipe.byteToHex(dose)}=${dose} ${Recipe.byteToHex(rpm)}=${rpm}`);
                 this.grindRPM = (rpm >= 60 && rpm <= 120) ? rpm : 120;
-                this.dosage = (dose >= 1 && dose <= 25) ? dose : this.isTea() ? 5 : 15;
+                this.dosage = (dose >= 1 && dose <= 31) ? dose : this.isTea() ? 5 : 15;
             }
 
             let pour = new Pour(pourNum, volume, temp, flow, agitation, pattern, pause);
@@ -484,13 +516,6 @@ class Recipe {
             poursVolume += volume;
             index += 8
             pourNum++;
-        }
-
-        const byte44 = data[poursDataLength + 44]
-        const byte45 = data[poursDataLength + 45]
-
-        if (byte44 !== 0 || byte45 !== 0) {
-            console.log(`Byte44/45: ${Recipe.byteToHex(byte44)} ${Recipe.byteToHex(byte45)}`);
         }
 
         if (this.isTea()) {
