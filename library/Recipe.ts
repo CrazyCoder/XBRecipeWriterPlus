@@ -86,14 +86,17 @@ class Recipe {
             this.defaultCups = jsonRecipe.defaultCups ?? jsonRecipe.pours.length ?? 3;
             // fix incorrectly saved cup types from the first app version with Tea support
             if (this.cupType === 0x23 || this.cupType === 0x13) {
-                this.defaultCups = (this.cupType & 0xF0) >> 4 + 1;
+                this.defaultCups = ((this.cupType & 0xF0) >> 4) + 1;
                 this.cupType = 0x03; // 0x03 is for Tea
             } else if (this.cupType == 0x04) {
                 this.cupType = 0x01; // 0x01 is for Other
             }
+            if (this.cupType != CUP_TYPE.TEA) {
+                this.defaultCups = 0; // only used for Tea
+            }
             this.grinder = jsonRecipe.grinder ?? true;
-            this.backup = jsonRecipe.backup;
-            this.uid = jsonRecipe.uid;
+            this.backup = jsonRecipe.backup ?? [];
+            this.uid = jsonRecipe.uid ?? [];
 
             if (jsonRecipe.uuid) {
                 this.uuid = jsonRecipe.uuid;
@@ -268,8 +271,12 @@ class Recipe {
 
         data = data.concat(this.convertXIDToData(this.xid));
 
-        // reconstruct the byte again from the number of cups and cup type
-        data.push(((this.defaultCups - 1) << 4) | this.cupType);
+        if (this.isTea()) {
+            // reconstruct the byte again from the number of cups and cup type for Tea recipes only
+            data.push(((this.defaultCups - 1) << 4) | this.cupType);
+        } else {
+            data.push(this.cupType);
+        }
 
         data.push(this.pours.length << 3);
         let pourNumber = 0;
@@ -449,7 +456,7 @@ class Recipe {
 
         let cup_type_and_default_tea_cups = data[39];
         // high bits may contain the default number of tea cups (0x23 = 2 + 1 = 3 cups and tea cup type = 3)
-        this.defaultCups = (cup_type_and_default_tea_cups & 0xF0) >> 4 + 1;
+        this.defaultCups = ((cup_type_and_default_tea_cups & 0xF0) >> 4) + 1;
         // low bits is the cup/pod type
         this.cupType = cup_type_and_default_tea_cups & 0x0F;
 
@@ -534,12 +541,13 @@ class Recipe {
 
     public toString(): string {
         return `Recipe: ${this.title}
-    UID:    ${Recipe.convertNumberArrayToHex(this.uid)}
-    Backup: ${Recipe.convertNumberArrayToHex(this.backup)}
-    Prefix: ${Recipe.convertNumberArrayToHex(this.prefixArray)}
-    Suffix: ${Recipe.convertNumberArrayToHex(this.suffixArray)}
+    UID:    ${Recipe.convertNumberArrayToHex(this.uid ?? "")}
+    Backup: ${Recipe.convertNumberArrayToHex(this.backup ?? "")}
+    Prefix: ${Recipe.convertNumberArrayToHex(this.prefixArray ?? "")}
+    Suffix: ${Recipe.convertNumberArrayToHex(this.suffixArray ?? "")}
     XID: ${this.xid}
     Cup: ${this.cupType}
+    Steeps: ${this.defaultCups}
     Dose: ${this.dosage}
     Ratio: 1:${this.ratio}
     Grind Size: ${this.grindSize}
