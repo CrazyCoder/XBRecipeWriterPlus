@@ -35,24 +35,23 @@ export default function AndroidNFCDialog(props: {
             onOpenChange={(isOpen: boolean) => !isOpen && props.onClose()}
             modal
             dismissOnSnapToBottom
-
             snapPoints={[70, 100]} // Adjust heights as necessary
         >
             <Sheet.Overlay/>
             <Sheet.Handle/>
             <Sheet.Frame
                 style={{
-                    backgroundColor: 'white',
+                    backgroundColor:     'white',
                     borderTopLeftRadius: 16,
                     borderTopRightRadius: 16,
-                    padding: 16,
+                    padding:             16
                 } as ViewStyle}
             >
                 <YStack gap={16} ai="center">
                     <Spinner size="large">
                     </Spinner>
                     {props.progress !== undefined ?
-                        <XStack key={props.progress} paddingHorizontal="$5" alignItems='center'>
+                        <XStack key={props.progress} paddingHorizontal="$5" alignItems="center">
                             <ProgressBar styleAttr="Horizontal" color="blue" indeterminate={false}
                                          progress={props.progress / 100} style={{width: '100%'}}/>
                             <Text paddingLeft="$2" color="black">{props.progress + "%"}</Text>
@@ -64,7 +63,8 @@ export default function AndroidNFCDialog(props: {
                         Place your card close to the NFC reader to continue.
                     </Text>
                     <NfcIcon/>
-                    <Button backgroundColor="blue" size="$6" color="white" theme="active" onPress={() => onCancel()}>
+                    <Button backgroundColor="blue" size="$6" color="white" theme="active"
+                            onPress={() => onCancel()}>
                         Cancel
                     </Button>
                 </YStack>

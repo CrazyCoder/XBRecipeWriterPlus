@@ -4,17 +4,15 @@ import {SplashScreen, Stack} from 'expo-router';
 import React, {useEffect} from 'react';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 
-
 import {useColorScheme} from '@/hooks/useColorScheme';
-import {PortalProvider, TamaguiProvider, Theme} from "tamagui";
+import {TamaguiProvider, Theme} from 'tamagui';
+import {PortalProvider} from '@tamagui/portal'
 import config from '../tamagui.config' // your configuration
-import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {Toasts} from '@backpackapp-io/react-native-toast';
 import {StatusBar} from 'expo-status-bar';
 
-
-import {ShareIntentProvider} from "expo-share-intent";
-import {MySafeAreaView} from "@/components/MySafeAreaView";
+import {ShareIntentProvider} from 'expo-share-intent';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -22,15 +20,15 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
     const colorScheme = useColorScheme();
     const [loaded] = useFonts({
-        SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+        SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf')
     });
 
     const LightTheme = {
         ...DefaultTheme,
         colors: {
             ...DefaultTheme.colors,
-            background: 'rgb(221,221,221)',
-        },
+            background: 'rgb(221,221,221)'
+        }
     };
 
     useEffect(() => {
@@ -44,44 +42,40 @@ export default function RootLayout() {
     }
 
     return (
-        <>
-            <ShareIntentProvider
-                options={{
-                    debug: false,
-                    resetOnBackground: true,
-                }}>
-                <GestureHandlerRootView style={{flex: 1}}>
-                    <PortalProvider shouldAddRootHost={true}>
-                        <SafeAreaProvider>
-                            <TamaguiProvider config={config}>
-                                <Theme name={colorScheme}>
-                                    <ThemeProvider
-                                        value={colorScheme === "light" ? LightTheme : DarkTheme}
-                                    >
-                                        <MySafeAreaView>
-                                            <Stack
-                                                screenOptions={{
-                                                    headerStyle: {
-                                                        backgroundColor: '#f4511e',
-                                                    },
-                                                    headerTintColor: '#fff',
-                                                    headerTitleStyle: {
-                                                        fontWeight: 'bold',
-                                                    }
-                                                }}>
-                                                <Stack.Screen name="index" options={{}}/>
-                                                <Stack.Screen name="editRecipe" options={{title: "Edit Recipe"}}/>
-                                            </Stack>
-                                            <Toasts/>
-                                            <StatusBar hidden={false} translucent={true}/>
-                                        </MySafeAreaView>
-                                    </ThemeProvider>
-                                </Theme>
-                            </TamaguiProvider>
-                        </SafeAreaProvider>
-                    </PortalProvider>
-                </GestureHandlerRootView>
-            </ShareIntentProvider>
-        </>
+        <ShareIntentProvider
+            options={{
+                debug:             true,
+                resetOnBackground: true
+            }}>
+            <GestureHandlerRootView style={{flex: 1}}>
+                <TamaguiProvider config={config}>
+                    <Theme name={colorScheme}>
+                        <PortalProvider shouldAddRootHost>
+                            <SafeAreaProvider>
+                                <ThemeProvider value={colorScheme === "light" ? LightTheme : DarkTheme}>
+                                    <SafeAreaView style={{flex: 1, backgroundColor: '#f4511e'}}>
+                                        <Stack
+                                            screenOptions={{
+                                                headerStyle:      {
+                                                    backgroundColor: '#f4511e'
+                                                },
+                                                headerTintColor:  '#fff',
+                                                headerTitleStyle: {
+                                                    fontWeight: 'bold'
+                                                }
+                                            }}>
+                                            <Stack.Screen name="index" options={{}}/>
+                                            <Stack.Screen name="editRecipe" options={{title: "Edit Recipe"}}/>
+                                        </Stack>
+                                        <Toasts/>
+                                        <StatusBar hidden={false} translucent={true}/>
+                                    </SafeAreaView>
+                                </ThemeProvider>
+                            </SafeAreaProvider>
+                        </PortalProvider>
+                    </Theme>
+                </TamaguiProvider>
+            </GestureHandlerRootView>
+        </ShareIntentProvider>
     );
 }

@@ -92,10 +92,6 @@ export default function HomeScreen() {
                     }
                 }
             }
-            // we want to handle share intent event in a specific page
-            /*router.replace({
-              pathname: "shareintent",
-            });*/
         }
     }, [hasShareIntent]);
 
@@ -185,7 +181,7 @@ export default function HomeScreen() {
                         duration: 4000,
                         position: ToastPosition.TOP,
                         styles: {
-                            view: {backgroundColor: 'green'},
+                            view: {backgroundColor: 'green'}
                         }
                     });
                 }
@@ -247,20 +243,24 @@ export default function HomeScreen() {
                                         data={getRecipes()} renderItem={({item}: { item: Recipe }) => (
                             <View style={{maxWidth: 600}}>
                                 <RecipeItem recipe={item} onPress={() => {
-                                    router.push({pathname: '/editRecipe', params: {recipeJSON: JSON.stringify(item)}});
+                                    router.push({
+                                        pathname: '/editRecipe',
+                                        params:   {recipeJSON: JSON.stringify(item)}
+                                    });
                                 }}>
                                 </RecipeItem>
                             </View>
                         )} renderQuickActions={({index, item}: { index: number; item: Recipe }) => (
                             <View style={{
-                                maxWidth: 600,
+                                maxWidth:      600,
                                 justifyContent: "flex-end",
-                                flex: 1,
+                                flex:          1,
                                 flexDirection: "row",
-                                alignItems: "center"
+                                alignItems:    "center"
                             }}>
                                 <XStack paddingRight="$2" height="60%" paddingVertical="$3">
-                                    <Button onPress={() => deleteRecipe(item)} width={80} height="100%" marginRight="$1"
+                                    <Button onPress={() => deleteRecipe(item)} width={80} height="100%"
+                                            marginRight="$1"
                                             alignItems="center" justifyContent="center" backgroundColor="red"
                                             borderColor="#ffa592" borderWidth={2} borderRadius={10}><AntDesign
                                         name="delete" size={25} color="white"/></Button>
@@ -287,8 +287,8 @@ export default function HomeScreen() {
                                        onClose={() => onCloseImportCallback()}/> : ""}
 
             {Platform.OS !== "ios" && showAndroidNFCDialog ?
-                <AndroidNFCDialog onClose={() => onNFCDialogClose()} progress={readProgress}></AndroidNFCDialog> : ""}
-
+                <AndroidNFCDialog onClose={() => onNFCDialogClose()}
+                                  progress={readProgress}></AndroidNFCDialog> : ""}
         </>
     )
 }
