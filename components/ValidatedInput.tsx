@@ -103,12 +103,20 @@ export default function ValidatedInput(props: Props) {
         return 'Error: Invalid Input'
     }
 
+    const pressedButtonStyle = ({pressed}: { pressed: boolean }) => [
+        {
+            opacity:   pressed ? 0.5 : 1,
+            transform: [{scale: pressed ? 0.9 : 1}]
+        }
+    ];
+
+
     return (
         <>
             <YStack>
                 <XStack padding="$2" alignItems="center" alignSelf="flex-start" flex={1} gap={"$4"}>
                     <XStack gap="$3">
-                        <Pressable onPress={() => onMinusPress()}>
+                        <Pressable onPressIn={() => onMinusPress()} style={pressedButtonStyle}>
                             <AntDesign padding={0} name="minuscircle" size={30} color="red"/>
                         </Pressable>
                     </XStack>
@@ -121,17 +129,17 @@ export default function ValidatedInput(props: Props) {
                                     flex: 1, borderWidth: 1, borderRadius: 10, borderColor: "gray", paddingHorizontal: 1
                                 }}>
                                     <View style={{
-                                        zIndex: 1,
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 10,
-                                        right: 0,
-                                        bottom: 0,
-                                        pointerEvents: 'none',
-                                        justifyContent: 'center',
+                                        zIndex:         1,
+                                        position:       'absolute',
+                                        top:            0,
+                                        left:           10,
+                                        right:          0,
+                                        bottom:         0,
+                                        pointerEvents:  'none',
+                                        justifyContent: 'center'
                                     }}>
                                         <Label style={{
-                                            textAlign: 'left',
+                                            textAlign: 'left'
                                         }}>
                                             {props.label}
                                         </Label>
@@ -144,10 +152,9 @@ export default function ValidatedInput(props: Props) {
                                             minimumTrackTintColor="rgba(255, 0, 0, 0.9)"
                                             maximumTrackTintColor="$color0"
                                             trackStyle={{height: 40, borderRadius: 8}}
-                                            // thumbTouchSize={{width: 50, height: 42}}
                                             renderThumbComponent={() => (
                                                 <View style={{
-                                                    width: 0,
+                                                    width:  0,
                                                     height: 0
                                                 }}/>
                                             )}
@@ -166,16 +173,14 @@ export default function ValidatedInput(props: Props) {
                                borderColor={validated ? "gray" : "red"} {...props} minWidth={"$4"}>
                         </Input>
                         <XStack paddingLeft="$3">
-                            <Pressable onPress={() => onPlusPress()}>
+                            <Pressable onPressIn={() => onPlusPress()} style={pressedButtonStyle}>
                                 <AntDesign padding={0} name="pluscircle" size={30} color="#ff5c00"/>
                             </Pressable>
                         </XStack>
                     </XStack>
-
                 </XStack>
                 {!validated ? <H6 fontWeight="600" color="red" padding="$2">{"Error: " + getErrorMessage()}</H6> : ""}
             </YStack>
-
         </>
     );
 }
