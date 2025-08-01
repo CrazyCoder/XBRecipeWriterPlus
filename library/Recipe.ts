@@ -4,7 +4,7 @@ import uuid from 'react-native-uuid';
 
 export const CUP_TYPE = {
     XPOD:  0x00,
-    OMNI: 0x02, // no overflow protection
+    OMNI:  0x02, // no overflow protection
     OTHER: 0x01,
     TEA:   0x03  // high bits may contain the default number of cups to brew
 }
@@ -393,9 +393,9 @@ class Recipe {
             let pourVolumeMap = [];
             for (let i = 0; i < this.pours.length; i++) {
                 pourVolumeMap.push({
-                    pourIndex:    i,
-                    origVolume:   this.pours[i].volume,
-                    scaledVolume: this.pours[i].volume * scalingFactor,
+                    pourIndex:           i,
+                    origVolume:          this.pours[i].volume,
+                    scaledVolume:        this.pours[i].volume * scalingFactor,
                     roundedScaledVolume: Math.round(this.pours[i].volume * scalingFactor)
                 });
             }
