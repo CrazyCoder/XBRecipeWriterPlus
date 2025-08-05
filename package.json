@@ -23,8 +23,8 @@
     "@react-native-community/progress-bar-android": "^1.0.5",
     "@react-native-community/slider": "4.5.7",
     "@react-navigation/native": "^7.1.16",
-    "@tamagui/config": "^1.132.15",
-    "@tamagui/portal": "^1.132.15",
+    "@tamagui/config": "^1.132.16",
+    "@tamagui/portal": "^1.132.16",
     "@types/react-native-snap-carousel": "^3.8.11",
     "@ui-kitten/eva-icons": "^5.3.1",
     "expo": "~53.0.20",
@@ -53,10 +53,10 @@
     "react-native-safe-area-context": "^5.5.2",
     "react-native-screens": "~4.13.1",
     "react-native-snap-carousel": "^3.9.1",
-    "react-native-svg": "~15.11.2",
+    "react-native-svg": "~15.12.1",
     "react-native-swipeable-list": "~0.1.2",
     "react-native-uuid": "~2.0.3",
-    "tamagui": "^1.132.15"
+    "tamagui": "^1.132.16"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",
