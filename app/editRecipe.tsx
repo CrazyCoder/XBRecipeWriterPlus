@@ -40,7 +40,7 @@ export default function editRecipe() {
     }, [recipeInJSON]);
 
     const ON_OFF_BUTTON_CONFIG = {
-        buttons: [1, 0],
+        buttons:      [1, 0],
         getLabelText: (id: number) => id === 1 ? "On" : "Off"
     };
 
@@ -50,22 +50,22 @@ export default function editRecipe() {
     };
 
     const RECIPE_LABELS = {
-        TITLE:           "Title",
-        XID:             "XID",
-        DOSE:            "Dose (g)",
-        RATIO:           "Ratio",
-        GRIND_SIZE:      "Grind size",
-        GRIND_RPM:       "Grind RPM",
-        GRINDER:         "Grinder",
-        CUP:             "Cup",
-        CUPS:            "Steeps",
-        VOLUME:          "Volume",
-        TEMPERATURE:     "Temperature (°C)",
-        FLOW_RATE:       "Flow rate (ml/s)",
-        PAUSING:         "Pausing (s)",
-        PATTERN:         "Pattern",
+        TITLE:            "Title",
+        XID:              "XID",
+        DOSE:             "Dose (g)",
+        RATIO:            "Ratio",
+        GRIND_SIZE:       "Grind size",
+        GRIND_RPM:        "Grind RPM",
+        GRINDER:          "Grinder",
+        CUP:              "Cup",
+        CUPS:             "Steeps",
+        VOLUME:           "Volume",
+        TEMPERATURE:      "Temperature (°C)",
+        FLOW_RATE:        "Flow rate (ml/s)",
+        PAUSING:          "Pausing (s)",
+        PATTERN:          "Pattern",
         AGITATION_BEFORE: "Agitation before",
-        AGITATION_AFTER: "Agitation after"
+        AGITATION_AFTER:  "Agitation after"
     } as const;
 
 
@@ -78,7 +78,7 @@ export default function editRecipe() {
 
     useEffect(() => {
         navigation.setOptions({
-            title: 'Edit Recipe',
+            title:       'Edit Recipe',
             headerShown: true,
             headerRight: () => <IconButton onPress={() => writeCard()} title="" icon={writeCardIcon()}/>
         })
@@ -270,48 +270,48 @@ export default function editRecipe() {
         }> = {
             [RECIPE_LABELS.GRINDER]:    {
                 requiresNumber: true,
-                update: (r: Recipe, val: string) => {
+                update:         (r: Recipe, val: string) => {
                     r.grinder = val === "1";
                     setKey((prev) => prev + 1);
                 }
             },
             [RECIPE_LABELS.GRIND_SIZE]: {
                 requiresNumber: true,
-                update: (r: Recipe, val: string) => r.grindSize = Number(val)
+                update:         (r: Recipe, val: string) => r.grindSize = Number(val)
             },
             [RECIPE_LABELS.GRIND_RPM]:  {
                 requiresNumber: true,
-                update: (r: Recipe, val: string) => r.grindRPM = Number(val)
+                update:         (r: Recipe, val: string) => r.grindRPM = Number(val)
             },
             [RECIPE_LABELS.RATIO]:      {
                 requiresNumber: true,
-                update: (r: Recipe, val: string) => r.ratio = Number(val)
+                update:         (r: Recipe, val: string) => r.ratio = Number(val)
             },
             [RECIPE_LABELS.DOSE]:       {
                 requiresNumber: true,
-                update: (r: Recipe, val: string) => r.dosage = Number(val)
+                update:         (r: Recipe, val: string) => r.dosage = Number(val)
             },
             [RECIPE_LABELS.XID]:        {
                 requiresNumber: false,
-                update: (r: Recipe, val: string) => r.xid = val
+                update:         (r: Recipe, val: string) => r.xid = val
             },
             [RECIPE_LABELS.TITLE]:      {
                 requiresNumber: false,
-                update: (r: Recipe, val: string) => {
+                update:         (r: Recipe, val: string) => {
                     r.title = val;
                     setTitleChanged(true);
                 }
             },
             [RECIPE_LABELS.CUP]:        {
                 requiresNumber: false,
-                update: (r: Recipe, val: string) => {
+                update:         (r: Recipe, val: string) => {
                     r.cupType = Number(val);
                     setKey((prev) => prev + 1);
                 }
             },
             [RECIPE_LABELS.CUPS]:       {
                 requiresNumber: true,
-                update: (r: Recipe, val: string) => {
+                update:         (r: Recipe, val: string) => {
                     let cups = Number(val);
                     if (cups <= r.pours.length) {
                         r.defaultCups = cups
@@ -423,19 +423,20 @@ export default function editRecipe() {
                                                         onValidEditFunction={editInputComplete}/>
                                     </>
                                 )}
-                                <XStack>
-                                    <MyButtonGroup initialValue={"" + getRecipe()!.cupType} label={RECIPE_LABELS.CUP}
-                                                   size="$4" minWidth={"$5"}
-                                                   orientation="horizontal"
-                                                   onToggle={(val) => editInputComplete(RECIPE_LABELS.CUP, val)}
-                                                   buttons={Object.values(CUP_TYPE)}
-                                                   getLabelText={Recipe.getCupTypeText}
-                                    />
-                                    <TooltipComponent
-                                        content={"Omni type disables overflow protection. Other type is used for third-party brewers."}/>
-                                </XStack>
                                 {!getRecipe()!.isTea() && (
                                     <>
+                                        <XStack>
+                                            <MyButtonGroup initialValue={"" + getRecipe()!.cupType}
+                                                           label={RECIPE_LABELS.CUP}
+                                                           size="$4" minWidth={"$5"}
+                                                           orientation="horizontal"
+                                                           onToggle={(val) => editInputComplete(RECIPE_LABELS.CUP, val)}
+                                                           buttons={[CUP_TYPE.XPOD, CUP_TYPE.OMNI, CUP_TYPE.OTHER]}
+                                                           getLabelText={Recipe.getCupTypeText}
+                                            />
+                                            <TooltipComponent
+                                                content={"Omni type disables overflow protection. Other type is used for third-party brewers."}/>
+                                        </XStack>
                                         <XStack>
                                             <MyButtonGroup initialValue={getRecipe()!.grinder ? "1" : "0"}
                                                            label={RECIPE_LABELS.GRINDER} size="$4" minWidth={"$5"}
