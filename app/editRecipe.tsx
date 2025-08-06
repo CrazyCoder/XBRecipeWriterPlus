@@ -5,7 +5,7 @@ import {AntDesign} from "@expo/vector-icons";
 import {Icon, IconElement} from "@ui-kitten/components";
 import {useLocalSearchParams, useNavigation} from "expo-router";
 import React, {useEffect, useMemo, useState} from "react";
-import {Alert, Platform, Pressable, useColorScheme, useWindowDimensions} from "react-native";
+import {ActivityIndicator, Alert, Platform, Pressable, useColorScheme, useWindowDimensions} from "react-native";
 
 
 import {Button, getTokens, H6, ScrollView, XStack, YStack} from "tamagui";
@@ -19,10 +19,11 @@ import AndroidNFCDialog from "@/components/AndroidNFCDialog";
 import NFC from "@/library/NFC";
 import Svg, {Path} from "react-native-svg";
 import Pour, {POUR_PATTERN} from "@/library/Pour";
+import {XBloomRecipe} from "@/library/XBloomRecipe";
 
 
 export default function editRecipe() {
-    let {recipeJSON, saveEnabled} = useLocalSearchParams();
+    const {recipeJSON, saveEnabled} = useLocalSearchParams();
     const [recipeInJSON, setRecipeInJSON] = useState<string>("");
     const [inputError, setInputError] = useState(false);
     const [titleChanged, setTitleChanged] = useState(false);
@@ -30,6 +31,7 @@ export default function editRecipe() {
     const [writeProgress, setWriteProgress] = useState(0);
     const [showAndroidNFCDialog, setShowAndroidNFCDialog] = useState(false);
     const [key, setKey] = useState(0);
+    const [isLoadingTitle, setIsLoadingTitle] = useState(false);
 
     // Cache the Recipe object using useMemo
     const cachedRecipe = useMemo<Recipe | null>(() => {
@@ -44,11 +46,6 @@ export default function editRecipe() {
         getLabelText: (id: number) => id === 1 ? "On" : "Off"
     };
 
-    const CUPS_BUTTON_CONFIG = {
-        buttons:      [1, 2, 3],
-        getLabelText: (id: number) => id.toString()
-    };
-
     const RECIPE_LABELS = {
         TITLE:            "Title",
         XID:              "XID",
@@ -58,7 +55,6 @@ export default function editRecipe() {
         GRIND_RPM:        "Grind RPM",
         GRINDER:          "Grinder",
         CUP:              "Cup",
-        CUPS:             "Steeps",
         VOLUME:           "Volume",
         TEMPERATURE:      "Temperature (°C)",
         FLOW_RATE:        "Flow rate (ml/s)",
@@ -83,6 +79,43 @@ export default function editRecipe() {
             headerRight: () => <IconButton onPress={() => writeCard()} title="" icon={writeCardIcon()}/>
         })
     }, [navigation, recipeInJSON]);
+
+    const fetchRecipeTitle = async (recipe: Recipe) => {
+        setIsLoadingTitle(true);
+
+        try {
+            const xbRecipe = new XBloomRecipe(recipe.xid);
+            await xbRecipe.fetchRecipeDetail();
+
+            let recipeTitle = xbRecipe.getRecipeTitle();
+            if (recipeTitle.length > 0) {
+                // Update the current recipe with the fetched title
+                recipe.title = recipeTitle;
+                setRecipeInJSON(JSON.stringify(recipe));
+                setTitleChanged(true);
+                setEnableSave(true);
+            }
+        } catch (error) {
+            console.log("Failed to fetch recipe title:", error);
+        } finally {
+            setIsLoadingTitle(false);
+        }
+    };
+
+    useEffect(() => {
+        const recipe = getRecipe();
+        // Only fetch if we have a recipe with XID but no title
+        if (recipe && recipe.xid && recipe.title.length == 0) {
+            fetchRecipeTitle(recipe);
+        }
+    }, [recipeInJSON]);
+
+    const handleReloadTitlePress = async () => {
+        const recipe = getRecipe();
+        if (recipe && recipe.xid) {
+            await fetchRecipeTitle(recipe);
+        }
+    };
 
     type IconProps = {
         title: string;
@@ -306,25 +339,8 @@ export default function editRecipe() {
                 requiresNumber: false,
                 update:         (r: Recipe, val: string) => {
                     r.cupType = Number(val);
-                    setKey((prev) => prev + 1);
                 }
             },
-            [RECIPE_LABELS.CUPS]:       {
-                requiresNumber: true,
-                update:         (r: Recipe, val: string) => {
-                    let cups = Number(val);
-                    if (cups <= r.pours.length) {
-                        r.defaultCups = cups
-                    } else {
-                        Alert.alert('Pours mismatch', 'Please add more pours to match the number of steeps.', [
-                            {
-                                text:    'Ok',
-                                onPress: () => setKey((prev) => prev + 1)
-                            }
-                        ])
-                    }
-                }
-            }
         };
 
         // Handle pour-specific settings
@@ -378,25 +394,36 @@ export default function editRecipe() {
                     <XStack maxHeight="90%">
                         <ScrollView showsVerticalScrollIndicator={false} margin="$2" nestedScrollEnabled={true}>
                             <YStack maxWidth="100%">
-                                <XStack>
-                                    <LabeledInput setErrorFunction={setInputError} width={290} maxLength={100}
+                                <XStack alignItems="center">
+                                    <LabeledInput setErrorFunction={setInputError} maxLength={100}
                                                   initialValue={getRecipe()!.title}
                                                   label={RECIPE_LABELS.TITLE}
                                                   onValidEditFunction={editInputComplete}
                                                   validateInput={(data) => {
                                                       return data.length > 0;
-
                                                   }}
-                                                  errorMessage="You must have a title"/>
-                                    <TooltipComponent paddingLeft="$2"
-                                                      content={"This is the title of the recipe for use in this app only. It is never stored on the card. So that's why this field is blank when you've just read in a card."}/>
+                                                  errorMessage="You must have a title"
+                                                  key={`title-${isLoadingTitle}`}
+                                                  disabled={isLoadingTitle}
+                                    />
+                                    <XStack paddingLeft={"$4"} paddingRight={"$3"}>
+                                        <Pressable onPress={handleReloadTitlePress} disabled={isLoadingTitle}>
+                                            {isLoadingTitle ? (
+                                                <ActivityIndicator size={30} color="gray"/>
+                                            ) : (
+                                                <AntDesign name="sync" size={30} color="gray"/>
+                                            )}
+                                        </Pressable>
+                                    </XStack>
                                 </XStack>
                                 <XStack>
-                                    <LabeledInput setErrorFunction={setInputError} width={110} maxLength={8}
+                                    <LabeledInput setErrorFunction={setInputError} maxLength={7}
                                                   initialValue={getRecipe()!.xid} label={RECIPE_LABELS.XID}
                                                   onValidEditFunction={editInputComplete}/>
-                                    <TooltipComponent
-                                        content="This is a 8 character unique identifier for the recipe that is used by the mobile app to look up the recipe online. It can be any alphanumeric value. Importantly, if you don't want the mobile app to show the wrong recipe, I'd probably change this. But if you do that, it won't show any recipe at all in the app (although it should still work on the machine)."/>
+                                    <XStack flex={1} paddingLeft={"$2"}>
+                                        <TooltipComponent
+                                        content="6-character recipe ID used by the app to find recipes online. Format: <VENDOR>[T]<NUM> (3-char vendor code, optional T for tea, 2-3 digit number). Remove or change to prevent wrong recipe display in app (machine will still work)."/>
+                                    </XStack>
                                 </XStack>
                                 <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.dosage}
                                                 minimumValue={1} maximumValue={getRecipe()!.isTea() ? 10 : 31} step={1}
@@ -450,26 +477,11 @@ export default function editRecipe() {
                                         </XStack>
                                     </>
                                 )}
-                                {getRecipe()!.isTea() && (
-                                    <>
-                                        <XStack>
-                                            <MyButtonGroup initialValue={getRecipe()!.defaultCups.toString()}
-                                                           label={RECIPE_LABELS.CUPS} size="$4" minWidth={"$5"}
-                                                           orientation="horizontal"
-                                                           onToggle={(val) => editInputComplete(RECIPE_LABELS.CUPS, val)}
-                                                           buttons={CUPS_BUTTON_CONFIG.buttons}
-                                                           getLabelText={CUPS_BUTTON_CONFIG.getLabelText}
-                                            />
-                                            <TooltipComponent
-                                                content={"Default number of tea cups/steeps (1 cup = 120ml). Use the knob on the machine to adjust the number before starting the recipe. Machine will pour ~90ml, then wait for the specified pause time to steep, then add ~30ml to trigger the siphon and drain the Tea pod. If it drains prematurely, reduce the volume of the pours. It can help with the tea leafs that take a lot of water and start to occupy the pod volume, especially in the last pours."}/>
-                                        </XStack>
-                                    </>
-                                )}
                                 <XStack alignItems="center" flexWrap="wrap">
                                     <XStack>
                                         <TotalVolumeComponent recipe={getRecipe()!}/>
                                         <TooltipComponent
-                                            content={"This field shows the total volume of all of the pours vs the total volume based on your dosage and ratio (sum of all pour volumes / dose * ratio). The numbers need to match for the valid recipe that the machine will accept. Adjust pour volumes, ratio and dose as needed."}/>
+                                            content={"This field shows the total volume of all pours versus the total volume based on your dosage and ratio (sum of all pour volumes / dose × ratio). The numbers need to match for a valid recipe that the machine will accept. Adjust pour volumes, ratio, and dose as needed.\n\nTea recipes show 90ml per pour, but the actual volume in the cup will be 120ml per pour since the machine automatically adds ~30ml to trigger the siphon. If the siphon triggers prematurely due to wet leaf expansion, reduce the volume of the latter steeps."}/>
                                     </XStack>
                                     <Button borderWidth={2}
                                             pressStyle={{backgroundColor: "#de4f00", borderColor: "gray"}}

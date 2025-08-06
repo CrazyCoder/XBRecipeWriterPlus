@@ -292,8 +292,12 @@ class Recipe {
         data = data.concat(this.convertXIDToData(this.xid));
 
         if (this.isTea()) {
-            // reconstruct the byte again from the number of cups and cup type for Tea recipes only
-            data.push(((this.defaultCups - 1) << 4) | this.cupType);
+            // Reconstruct the byte again from the number of cups and cup type for Tea recipes only.
+            // Always use the number of cups = number of pours in case the user has modified the recipe.
+            // It's not clear why the card stores the number of cups separately, so I removed the cup
+            // configuration to simplify the UI and code.
+            // If we find out how it's supposed to work, we can change this code back to use `defaultCups`.
+            data.push(((this.pours.length - 1) << 4) | this.cupType);
         } else {
             data.push(this.cupType);
         }
@@ -505,7 +509,6 @@ class Recipe {
         let poursVolume = 0;
 
         while (index < 41 + poursDataLength) {
-
             let volume = data[index]
             let temp = data[index + 1]
             let pattern = data[index + 2]

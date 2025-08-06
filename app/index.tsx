@@ -54,7 +54,7 @@ export default function HomeScreen() {
 
     useEffect(() => {
         navigation.setOptions({
-            title: 'Recipes',
+            title:       'Recipes',
             headerShown: true,
             headerRight: () => <IconButton onPress={() => readCard()} title="" icon={readCardIcon()}/>
         })
@@ -172,7 +172,7 @@ export default function HomeScreen() {
         try {
             console.log('Read Card')
             let recipe = new Recipe();
-            //toast("Hold your phone near the NFC tag");
+
             let success = await recipe.readCard(nfc, progressCallback);
 
             if (success) {
@@ -180,13 +180,12 @@ export default function HomeScreen() {
                     toast("Recipe read successfully", {
                         duration: 4000,
                         position: ToastPosition.TOP,
-                        styles: {
+                        styles:   {
                             view: {backgroundColor: 'green'}
                         }
                     });
                 }
                 setShowAndroidNFCDialog(false);
-
 
                 //reenable
                 router.push({pathname: '/editRecipe', params: {recipeJSON: JSON.stringify(recipe)}});
@@ -252,11 +251,11 @@ export default function HomeScreen() {
                             </View>
                         )} renderQuickActions={({index, item}: { index: number; item: Recipe }) => (
                             <View style={{
-                                maxWidth:      600,
+                                maxWidth:       600,
                                 justifyContent: "flex-end",
-                                flex:          1,
-                                flexDirection: "row",
-                                alignItems:    "center"
+                                flex:           1,
+                                flexDirection:  "row",
+                                alignItems:     "center"
                             }}>
                                 <XStack paddingRight="$2" height="60%" paddingVertical="$3">
                                     <Button onPress={() => deleteRecipe(item)} width={80} height="100%"

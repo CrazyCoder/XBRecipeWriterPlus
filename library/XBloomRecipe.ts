@@ -7,9 +7,15 @@ export class XBloomRecipe {
     private imageURL = "";
     private subtitle = "";
     private id = "";
+    private byXid = false;
 
     constructor(id: string) {
         this.id = id;
+        // Use different endpoint for XID-based requests
+        if (id.length > 0 && id.length <= 7) {
+            console.log("Got XID:", id);
+            this.byXid = true;
+        }
     }
 
     private containsChineseCustomChars(inputString: string) {
@@ -37,12 +43,7 @@ export class XBloomRecipe {
 
             let dosage: number = this.xbRecipeJSON.recipeVo.dose;
             let pourCount: number = this.xbRecipeJSON.recipeVo.pourCount;
-            let title = "";
-            if (this.getSubtitle().length > 0) {
-                title = this.getName() + " | " + this.getSubtitle();
-            } else {
-                title = this.getName();
-            }
+            let title = this.getRecipeTitle();
 
             let xid = this.xbRecipeJSON.recipeVo.podsVo?.id ?? "";
 
@@ -117,6 +118,14 @@ export class XBloomRecipe {
         return null;
     }
 
+    public getRecipeTitle() {
+        if (this.getSubtitle().length > 0 && this.getName().length > 0) {
+            return this.getName() + " | " + this.getSubtitle();
+        } else {
+            return this.getName();
+        }
+    }
+
     public getName() {
         return this.name;
     }
@@ -134,19 +143,37 @@ export class XBloomRecipe {
     }
 
     public async fetchRecipeDetail() {
-        const response = await fetch("https://client-api.xbloom.com/RecipeDetail.html", {
+        let apiEndpoint = this.byXid ?
+            "https://client-api.xbloom.com/tRecipeDetailOfPods.thtml" :
+            "https://client-api.xbloom.com/RecipeDetail.html";
+
+        // Common parameters for both requests
+        const baseBody = {
+            interfaceVersion: 19700101,
+            skey:             "testskey"
+        };
+
+        // Conditional body based on byXid flag
+        const requestBody = this.byXid ? {
+            ...baseBody,
+            xid:               this.id,
+            languageType:      0,
+            adaptedModel:      1,
+            isRefreshScanTime: 1
+        } : {
+            ...baseBody,
+            tableIdOfRSA: this.id
+        };
+
+        const response = await fetch(apiEndpoint, {
             headers: {
-                accept: "application/json, text/plain, */*",
+                accept:            "application/json, text/plain, */*",
                 "accept-language": "en-US,en;q=0.9",
-                "content-type": "application/json",
-                Referer: "https://share-h5.xbloom.com/",
+                "content-type":    "application/json",
+                Referer:           "https://share-h5.xbloom.com/"
             },
-            body: JSON.stringify({
-                tableIdOfRSA: this.id,
-                interfaceVersion: 19700101,
-                skey: "testskey"
-            }),
-            method: "POST"
+            body:    JSON.stringify(requestBody),
+            method:  "POST"
         });
 
         if (!response.ok) {
@@ -157,14 +184,15 @@ export class XBloomRecipe {
         if (data) {
             this.xbRecipeJSON = JSON.parse(JSON.stringify(data));
             console.log(JSON.stringify(this.xbRecipeJSON));
-            this.name = this.xbRecipeJSON.recipeVo.theName;
-            if (this.xbRecipeJSON.recipeVo.podsVo) {
-                this.subtitle = this.xbRecipeJSON.recipeVo.podsVo.subtitle;
-                this.imageURL = this.xbRecipeJSON.recipeVo.podsVo.imagePath;
-                console.log(this.name);
-                console.log(this.imageURL)
-            } else {
-                this.subtitle = "";
+            let recipeVo = this.xbRecipeJSON.recipeVo;
+            if (recipeVo) {
+                this.name = recipeVo.theName;
+                if (recipeVo.podsVo) {
+                    this.subtitle = recipeVo.podsVo.subtitle;
+                    this.imageURL = recipeVo.podsVo.imagePath;
+                    console.log(this.name);
+                    console.log(this.imageURL)
+                }
             }
         }
         return data;

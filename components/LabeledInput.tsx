@@ -1,5 +1,5 @@
-import React, {useState,} from 'react';
-import {TextInputProps,} from 'react-native';
+import React, {useState} from 'react';
+import {TextInputProps} from 'react-native';
 import {H6, Input, Label, XStack, YStack} from 'tamagui';
 
 type Props = TextInputProps & {
@@ -54,12 +54,11 @@ export default function LabeledInput(props: Props) {
 
     return (
         <>
-            <YStack maxWidth={400}>
-                <XStack maxWidth={400} paddingLeft="$2" paddingVertical="$2" alignItems="center" alignSelf="flex-start"
+            <YStack flex={1}>
+                <XStack paddingLeft="$2" paddingVertical="$2" alignItems="center" alignSelf="flex-start"
                         gap={"$2"}>
                     <Label minWidth={"$3"}>{props.label}</Label>
-                    <Input width={props.maxLength * 13}
-                           maxWidth={props.maxLength * 13}
+                    <Input flex={1}
                            disabled={props.disabled}
                            marginLeft="$1"
                            value={value ? "" + value : ""}
