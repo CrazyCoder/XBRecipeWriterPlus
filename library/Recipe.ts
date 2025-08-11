@@ -106,9 +106,6 @@ class Recipe {
             this.key = this.uuid;
             for (let i = 0; i < jsonRecipe.pours.length; i++) {
                 let pour = typeof (jsonRecipe.pours[i]) == 'string' ? JSON.parse(jsonRecipe.pours[i]) : jsonRecipe.pours[i];
-                if (pour.pauseTime == 256) {
-                    pour.pauseTime = 0;
-                }
                 let p = new Pour(
                     (pour.pourNumber),
                     pour.volume,
@@ -513,7 +510,7 @@ class Recipe {
             let temp = data[index + 1]
             let pattern = data[index + 2]
             let agitation = data[index + 3]
-            let pause = 256 - data[index + 4]
+            let pause = (256 - data[index + 4]) & 0xFF
             let flow = data[index + 7]
 
             if (this.isTea() && volume > 90) {
