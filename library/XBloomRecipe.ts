@@ -52,6 +52,23 @@ export class XBloomRecipe {
             recipe.title = title;
             recipe.grindSize = grindSize;
             recipe.xid = xid;
+
+            if (this.byXid) {
+                let shareLink = this.xbRecipeJSON.recipeVo?.shareRecipeLink ?? "";
+                try {
+                    const url = new URL(shareLink);
+                    const id = url.searchParams.get('id');
+                    if (id) {
+                        recipe.shareId = decodeURIComponent(id);
+                        console.log("Got shareId:", recipe.shareId);
+                    }
+                } catch (e) {
+                    console.log("Error parsing share link:", e);
+                }
+            } else {
+                recipe.shareId = this.id;
+            }
+
             recipe.grindRPM = (this.xbRecipeJSON.recipeVo.rpm && this.xbRecipeJSON.recipeVo.rpm >= 60 && this.xbRecipeJSON.recipeVo.rpm <= 120)
                 ? this.xbRecipeJSON.recipeVo.rpm
                 : 120;

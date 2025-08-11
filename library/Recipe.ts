@@ -55,6 +55,7 @@ class Recipe {
     public uuid: string = "";
     public title: string = "";
     public xid: string = "";
+    public shareId: string = "";
     public key: string = ""
     public ratio: number = -1;
     public dosage: number = 15;
@@ -125,6 +126,7 @@ class Recipe {
                 this.dosage = jsonRecipe.dosage;
             }
             this.checksum = jsonRecipe.checksum;
+            this.shareId = jsonRecipe.shareId ?? "";
         }
 
     }

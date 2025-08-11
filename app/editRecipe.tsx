@@ -8,7 +8,7 @@ import React, {useEffect, useMemo, useState} from "react";
 import {ActivityIndicator, Alert, Platform, Pressable, useColorScheme, useWindowDimensions} from "react-native";
 
 
-import {Button, getTokens, H6, ScrollView, XStack, YStack} from "tamagui";
+import {Adapt, Button, Dialog, Fieldset, getTokens, H6, ScrollView, Sheet, XStack, YStack} from "tamagui";
 import {MyButtonGroup} from "@/components/MyButtonGroup";
 import LabeledInput from "@/components/LabeledInput";
 import RecipeDatabase from "@/library/RecipeDatabase";
@@ -32,6 +32,13 @@ export default function editRecipe() {
     const [showAndroidNFCDialog, setShowAndroidNFCDialog] = useState(false);
     const [key, setKey] = useState(0);
     const [isLoadingTitle, setIsLoadingTitle] = useState(false);
+    const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+    const [restoreOptions, setRestoreOptions] = useState<Array<{
+        id: string;
+        label: string;
+        action: () => Promise<void>;
+    }>>([]);
+
 
     // Cache the Recipe object using useMemo
     const cachedRecipe = useMemo<Recipe | null>(() => {
@@ -258,6 +265,164 @@ export default function editRecipe() {
         }
     }
 
+    const RestoreDialog = () => {
+        const [isRestoring, setIsRestoring] = useState(false);
+
+        const handleRestoreAction = async (action: () => Promise<void>) => {
+            setIsRestoring(true);
+            try {
+                await action();
+            } catch (error) {
+                console.error("Failed to restore recipe:", error);
+                toast(`${error}`, {
+                    styles: {
+                        view: {backgroundColor: 'rose'}
+                    }
+                });
+            } finally {
+                setIsRestoring(false);
+                setShowRestoreDialog(false);
+                setKey((prev) => prev + 1);
+            }
+        };
+
+        return (
+            <Dialog modal open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+                <Adapt platform="touch">
+                    <Sheet
+                        snapPoints={[Math.min(40 + restoreOptions.length * 15, 80), 100]}
+                        zIndex={200000} modal dismissOnSnapToBottom>
+                        <Sheet.Frame padding="$4">
+                            <Adapt.Contents/>
+                        </Sheet.Frame>
+                        <Sheet.Overlay/>
+                    </Sheet>
+                </Adapt>
+
+                <Dialog.Portal>
+                    <Dialog.Overlay key="overlay" opacity={0.5}/>
+                    <Dialog.Content bordered elevate gap="$4" maxWidth={400}>
+                        <Dialog.Title alignSelf="center" fontWeight={600}>
+                            Restore Recipe
+                        </Dialog.Title>
+                        <Dialog.Description textAlign="center">
+                            Choose how you would like to restore this recipe:
+                        </Dialog.Description>
+
+                        <Fieldset gap="$3" marginTop={"$3"}>
+                            {restoreOptions.map((option) => (
+                                <YStack key={option.id} gap="$2">
+                                    <Button marginTop={"$2"}
+                                            theme="red"
+                                            onPress={() => handleRestoreAction(option.action)}
+                                            size="$4"
+                                            disabled={isRestoring}
+                                            opacity={isRestoring ? 0.5 : 1}>
+                                        {option.label}
+                                    </Button>
+                                </YStack>
+                            ))}
+                            <XStack alignItems="center" gap="$2" justifyContent="center">
+                                <ActivityIndicator size="large" color="gray" animating={isRestoring}/>
+                            </XStack>
+                        </Fieldset>
+
+                        <XStack justifyContent="center" paddingTop="$4">
+                            <Button
+                                theme="active"
+                                onPress={() => setShowRestoreDialog(false)}>
+                                Cancel
+                            </Button>
+                        </XStack>
+                    </Dialog.Content>
+                </Dialog.Portal>
+            </Dialog>
+        );
+    };
+
+    function restoreRecipe() {
+        const recipe = getRecipe();
+        if (!recipe) return;
+
+        const options: Array<{
+            id: string;
+            label: string;
+            action: () => Promise<void>;
+        }> = [];
+
+        // Check for NFC backup data
+        if (recipe.backup && recipe.backup.length > 0) {
+            options.push({
+                id:     'nfc',
+                label:  'Restore from NFC card backup',
+                action: async () => {
+                    const restoredRecipe = new Recipe(recipe.backup);
+                    restoredRecipe.uuid = recipe.uuid; // keep UUID
+                    setRecipeInJSON(JSON.stringify(restoredRecipe));
+                    setEnableSave(true);
+                    toast("Recipe restored from NFC backup");
+                }
+            });
+        }
+
+        // Check for XID
+        if (recipe.xid && recipe.xid.trim().length > 0) {
+            options.push({
+                id:     'xid',
+                label:  'Restore by XID from online database',
+                action: async () => {
+                    const xbRecipe = new XBloomRecipe(recipe.xid);
+                    await xbRecipe.fetchRecipeDetail();
+                    const restoredRecipe = xbRecipe.getRecipe();
+                    if (restoredRecipe) {
+                        restoredRecipe.uuid = recipe.uuid; // keep UUID
+                        // keep original shareId as the one returned by XID may be different
+                        if (recipe.shareId && recipe.shareId.length > 0) {
+                            restoredRecipe.shareId = recipe.shareId;
+                        }
+                        // keep cup type in case user has customized it
+                        // (default recipeVo for the same XID may have a different cup type)
+                        restoredRecipe.cupType = recipe.cupType;
+                        setRecipeInJSON(JSON.stringify(restoredRecipe));
+                        setEnableSave(true);
+                        toast("Recipe restored by XID");
+                    } else {
+                        throw new Error('Could not fetch recipe data using XID');
+                    }
+                }
+            });
+        }
+
+        // Check for shareId
+        if (recipe.shareId && recipe.shareId.trim().length > 0) {
+            options.push({
+                id:     'shareId',
+                label:  'Restore by Share Link from online database',
+                action: async () => {
+                    const xbRecipe = new XBloomRecipe(recipe.shareId);
+                    await xbRecipe.fetchRecipeDetail();
+                    const restoredRecipe = xbRecipe.getRecipe();
+                    if (restoredRecipe) {
+                        restoredRecipe.uuid = recipe.uuid; // keep UUID
+                        setRecipeInJSON(JSON.stringify(restoredRecipe));
+                        setEnableSave(true);
+                        toast("Recipe restored by Share Link");
+                    } else {
+                        throw new Error('Could not fetch recipe data using Share Link');
+                    }
+                }
+            });
+        }
+
+        if (options.length === 0) {
+            Alert.alert('No Restore Options', 'This recipe has no available restore options (no NFC backup, XID, or Share ID found)');
+            return;
+        }
+
+        setRestoreOptions(options);
+        setShowRestoreDialog(true);
+    }
+
     function saveRecipe() {
         console.log("Save Recipe");
         console.log(recipeInJSON);
@@ -340,7 +505,7 @@ export default function editRecipe() {
                 update:         (r: Recipe, val: string) => {
                     r.cupType = Number(val);
                 }
-            },
+            }
         };
 
         // Handle pour-specific settings
@@ -390,8 +555,8 @@ export default function editRecipe() {
     return (
         <>
             {recipeInJSON && getRecipe() && recipeInJSON !== "" ?
-                <YStack maxWidth="100%" key={key}>
-                    <XStack maxHeight="90%">
+                <YStack maxWidth="100%" key={key} flex={1}>
+                    <XStack maxHeight="93%">
                         <ScrollView showsVerticalScrollIndicator={false} margin="$2" nestedScrollEnabled={true}>
                             <YStack maxWidth="100%">
                                 <XStack alignItems="center">
@@ -422,7 +587,7 @@ export default function editRecipe() {
                                                   onValidEditFunction={editInputComplete}/>
                                     <XStack flex={1} paddingLeft={"$2"}>
                                         <TooltipComponent
-                                        content="6-character recipe ID used by the app to find recipes online. Format: <VENDOR>[T]<NUM> (3-char vendor code, optional T for tea, 2-3 digit number). Remove or change to prevent wrong recipe display in app (machine will still work)."/>
+                                            content="6-character recipe ID used by the app to find recipes online. Format: <VENDOR>[T]<NUM> (3-char vendor code, optional T for tea, 2-3 digit number). Remove or change to prevent wrong recipe display in app (machine will still work)."/>
                                     </XStack>
                                 </XStack>
                                 <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.dosage}
@@ -483,11 +648,14 @@ export default function editRecipe() {
                                         <TooltipComponent
                                             content={"This field shows the total volume of all pours versus the total volume based on your dosage and ratio (sum of all pour volumes / dose × ratio). The numbers need to match for a valid recipe that the machine will accept. Adjust pour volumes, ratio, and dose as needed.\n\nTea recipes show 90ml per pour, but the actual volume in the cup will be 120ml per pour since the machine automatically adds ~30ml to trigger the siphon. If the siphon triggers prematurely due to wet leaf expansion, reduce the volume of the latter steeps."}/>
                                     </XStack>
-                                    <Button borderWidth={2}
+                                    <Button borderWidth={2} flex={1}
                                             pressStyle={{backgroundColor: "#de4f00", borderColor: "gray"}}
                                             borderColor="gray" paddingHorizontal="$3" paddingVertical="$2"
-                                            marginLeft="$2" marginVertical="$2" backgroundColor="#ff7036" color="white"
-                                            onPress={() => autoAdjustPourVolumes()}>Auto</Button>
+                                            marginHorizontal="$2" marginVertical="$2" backgroundColor="#f4511e"
+                                            fontWeight={700} fontSize="$5" color="white"
+                                            onPress={() => autoAdjustPourVolumes()}>
+                                        Auto
+                                    </Button>
                                 </XStack>
 
                                 <ScrollView showsHorizontalScrollIndicator={false} centerContent={true} horizontal
@@ -578,14 +746,20 @@ export default function editRecipe() {
                             </YStack>
                         </ScrollView>
                     </XStack>
-                    <XStack paddingVertical="$3" justifyContent="center" alignContent="center" alignItems="center">
-                        <Button onPress={() => saveRecipe()} width={200} fontSize={16} fontWeight={700}
+                    <XStack paddingVertical="$2" justifyContent="center" alignContent="center" alignItems="center"
+                            backgroundColor="$backgroundFocus">
+                        <Button marginHorizontal={"$2"} onPress={() => restoreRecipe()} width={150} fontSize={16}
+                                fontWeight={700}
+                                color="white" backgroundColor="#f4511e">Restore</Button>
+                        <Button marginHorizontal={"$4"} onPress={() => saveRecipe()} width={150} fontSize={16}
+                                fontWeight={700}
                                 disabled={inputError || !enableSave} color="white"
                                 backgroundColor={inputError || !enableSave ? "#f59d7d" : "#f4511e"}>Save</Button>
                     </XStack>
                     {Platform.OS !== "ios" && showAndroidNFCDialog ?
                         <AndroidNFCDialog onClose={() => onNFCDialogClose()}
                                           progress={writeProgress}></AndroidNFCDialog> : ""}
+                    <RestoreDialog/>
                 </YStack>
                 : ""}
         </>
