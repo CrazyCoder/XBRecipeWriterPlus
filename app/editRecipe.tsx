@@ -98,6 +98,14 @@ export default function editRecipe() {
             if (recipeTitle.length > 0) {
                 // Update the current recipe with the fetched title
                 recipe.title = recipeTitle;
+                // Also get shareID for restore feature if not already present
+                let xbr = xbRecipe.getRecipe();
+                if (xbr && xbr.shareId.length > 0 && recipe.shareId.length == 0) {
+                    recipe.shareId = xbr.shareId;
+                }
+                if (xbr && xbr.offline_backup.length > 0 && recipe.offline_backup.length == 0) {
+                    recipe.offline_backup = xbr.offline_backup;
+                }
                 setRecipeInJSON(JSON.stringify(recipe));
                 setTitleChanged(true);
                 setEnableSave(true);
@@ -341,6 +349,8 @@ export default function editRecipe() {
     };
 
     function restoreRecipe() {
+        const alwaysKeepFields = ['uuid', 'backup', 'title'];
+
         const recipe = getRecipe();
         if (!recipe) return;
 
@@ -350,6 +360,30 @@ export default function editRecipe() {
             action: () => Promise<void>;
         }> = [];
 
+        function keepSettingsAndSave(
+            restoredRecipe: Recipe,
+            fieldsToKeep: Array<keyof Recipe> = []
+        ) {
+            if (!recipe) return;
+            let keepFields = [...alwaysKeepFields, ...fieldsToKeep];
+
+            for (const field of keepFields) {
+                const value = (recipe as any)[field];
+
+                if (
+                    value !== undefined &&
+                    ((((typeof value === 'string') || (typeof value === 'object'))
+                            && value.length > 0) ||
+                        typeof value === 'boolean' ||
+                        typeof value === 'number')
+                ) {
+                    (restoredRecipe as any)[field] = value;
+                }
+            }
+            setRecipeInJSON(JSON.stringify(restoredRecipe));
+            setEnableSave(true);
+        }
+
         // Check for NFC backup data
         if (recipe.backup && recipe.backup.length > 0) {
             options.push({
@@ -357,10 +391,23 @@ export default function editRecipe() {
                 label:  'Restore from NFC card backup',
                 action: async () => {
                     const restoredRecipe = new Recipe(recipe.backup);
-                    restoredRecipe.uuid = recipe.uuid; // keep UUID
-                    setRecipeInJSON(JSON.stringify(restoredRecipe));
-                    setEnableSave(true);
+                    // keep shareId
+                    keepSettingsAndSave(restoredRecipe, ['shareId', 'offline_backup']);
                     toast("Recipe restored from NFC backup");
+                }
+            });
+        }
+
+        // Check for offline backup from the online database
+        if (recipe.offline_backup && recipe.offline_backup.length > 0) {
+            options.push({
+                id:     'offline',
+                label:  'Restore from offline backup',
+                action: async () => {
+                    const restoredRecipe = new Recipe(recipe.offline_backup, undefined, false);
+                    // keep shareId
+                    keepSettingsAndSave(restoredRecipe, ['shareId', 'offline_backup']);
+                    toast("Recipe restored from offline backup");
                 }
             });
         }
@@ -375,16 +422,9 @@ export default function editRecipe() {
                     await xbRecipe.fetchRecipeDetail();
                     const restoredRecipe = xbRecipe.getRecipe();
                     if (restoredRecipe) {
-                        restoredRecipe.uuid = recipe.uuid; // keep UUID
-                        // keep original shareId as the one returned by XID may be different
-                        if (recipe.shareId && recipe.shareId.length > 0) {
-                            restoredRecipe.shareId = recipe.shareId;
-                        }
-                        // keep cup type in case user has customized it
+                        // keep shareId and cup type in case user has customized it
                         // (default recipeVo for the same XID may have a different cup type)
-                        restoredRecipe.cupType = recipe.cupType;
-                        setRecipeInJSON(JSON.stringify(restoredRecipe));
-                        setEnableSave(true);
+                        keepSettingsAndSave(restoredRecipe, ['shareId', 'cupType']);
                         toast("Recipe restored by XID");
                     } else {
                         throw new Error('Could not fetch recipe data using XID');
@@ -403,9 +443,8 @@ export default function editRecipe() {
                     await xbRecipe.fetchRecipeDetail();
                     const restoredRecipe = xbRecipe.getRecipe();
                     if (restoredRecipe) {
-                        restoredRecipe.uuid = recipe.uuid; // keep UUID
-                        setRecipeInJSON(JSON.stringify(restoredRecipe));
-                        setEnableSave(true);
+                        // keep original XID
+                        keepSettingsAndSave(restoredRecipe, ['xid']);
                         toast("Recipe restored by Share Link");
                     } else {
                         throw new Error('Could not fetch recipe data using Share Link');

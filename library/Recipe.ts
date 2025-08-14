@@ -67,14 +67,19 @@ class Recipe {
     public cupType: number = CUP_TYPE.XPOD;
     public defaultCups: number = 0;
     public backup: number[] = [];
+    public offline_backup: number[] = [];
     public uid: number[] = [];
 
-    constructor(data?: number[], json?: string) {
+    constructor(data?: number[], json?: string, hasSignature: boolean = true) {
         this.uuid = (uuid.v4() as string);
         this.key = this.uuid;
 
         if (data) {
-            this.parseData(data);
+            if (hasSignature) {
+                this.parseData(data);
+            } else {
+                this.parseData(new Array(32).fill(0).concat(data));
+            }
             return;
         }
         if (json) {
@@ -95,6 +100,7 @@ class Recipe {
             }
             this.grinder = jsonRecipe.grinder ?? true;
             this.backup = jsonRecipe.backup ?? [];
+            this.offline_backup = jsonRecipe.offline_backup ?? [];
             this.uid = jsonRecipe.uid ?? [];
 
             if (jsonRecipe.uuid) {
@@ -274,7 +280,7 @@ class Recipe {
         return false;
     }
 
-    public getData(prefix: number[]): number[] {
+    public getData(prefix: number[] | null = null, withSignature: boolean = false): number[] {
         let data: number[] = [];
 
         if (prefix && prefix.length > 0) {
@@ -355,7 +361,11 @@ class Recipe {
         console.log("CheckSum:" + checkSum + ":" + this.checksum);
         data.push(checkSum);
 
-        data.splice(0, 32);
+        if (withSignature) {
+            return data;
+        } else {
+            data.splice(0, 32);
+        }
         return data
     }
 

@@ -128,6 +128,7 @@ export class XBloomRecipe {
                 recipe.pours.push(pour);
             }
             recipe.fixRatio();
+            recipe.offline_backup = recipe.getData();
             return recipe;
         } catch (e) {
             console.log("Error Importing Recipe:" + e);
