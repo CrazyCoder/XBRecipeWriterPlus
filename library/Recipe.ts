@@ -64,8 +64,6 @@ class Recipe {
     public grinder: boolean = true;
     public pours: Pour[] = [];
     public checksum: number = -1;
-    public prefixArray: number[] = [];
-    public suffixArray: number[] = [];
     public cupType: number = CUP_TYPE.XPOD;
     public defaultCups: number = 0;
     public backup: number[] = [];
@@ -117,8 +115,6 @@ class Recipe {
                     pour.pauseTime);
                 this.pours.push(p);
             }
-            this.prefixArray = jsonRecipe.prefixArray;
-            this.suffixArray = jsonRecipe.suffixArray;
             this.ratio = jsonRecipe.ratio;
             this.title = jsonRecipe.title;
             this.xid = jsonRecipe.xid;
@@ -284,7 +280,7 @@ class Recipe {
         if (prefix && prefix.length > 0) {
             data = data.concat(prefix);
         } else {
-            data = data.concat(this.prefixArray);
+            data = data.concat(this.backup.length >= 32 ? this.backup.slice(0, 32) : new Array(32).fill(0));
         }
         console.log("Prefix:" + Recipe.convertNumberArrayToHex(data));
 
@@ -473,8 +469,6 @@ class Recipe {
 
 
     private parseData(data: number[]) {
-        this.prefixArray = data.slice(0, 32);
-
         this.xid = this.convertDataToXID(data.slice(32, 39));
 
         let cup_type_and_default_tea_cups = data[39];
@@ -491,7 +485,6 @@ class Recipe {
         let numberOfPours = data[40] >> 3;
 
         let poursDataLength = numberOfPours * 8;
-        this.suffixArray = data.slice(44 + poursDataLength, data.length);
 
         this.grindSize = data[41 + poursDataLength] + GRIND_SIZE_OFFSET
 
@@ -565,8 +558,6 @@ class Recipe {
         return `Recipe: ${this.title}
     UID:    ${Recipe.convertNumberArrayToHex(this.uid ?? "")}
     Backup: ${Recipe.convertNumberArrayToHex(this.backup ?? "")}
-    Prefix: ${Recipe.convertNumberArrayToHex(this.prefixArray ?? "")}
-    Suffix: ${Recipe.convertNumberArrayToHex(this.suffixArray ?? "")}
     XID: ${this.xid}
     Cup: ${this.cupType}
     Steeps: ${this.defaultCups}
