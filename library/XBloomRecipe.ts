@@ -176,7 +176,8 @@ export class XBloomRecipe {
             xid:               this.id,
             languageType:      0,
             adaptedModel:      1,
-            isRefreshScanTime: 1
+            isRefreshScanTime: 1,
+            appVersion:        "2.1.2"
         } : {
             ...baseBody,
             tableIdOfRSA: this.id
