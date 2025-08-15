@@ -595,7 +595,7 @@ export default function editRecipe() {
         <>
             {recipeInJSON && getRecipe() && recipeInJSON !== "" ?
                 <YStack maxWidth="100%" key={key} flex={1}>
-                    <XStack maxHeight="93%">
+                    <XStack flex={1}>
                         <ScrollView showsVerticalScrollIndicator={false} margin="$2" nestedScrollEnabled={true}>
                             <YStack maxWidth="100%">
                                 <XStack alignItems="center">
