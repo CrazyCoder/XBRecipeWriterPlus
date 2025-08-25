@@ -34,6 +34,7 @@ export function MyButtonGroup(props: {
             justifyContent="flex-start"
             padding="$2"
             gap="$4"
+            flexWrap="wrap"
         >
             <Label paddingRight="$2" justifyContent="flex-end" size={props.size} minWidth={props.minWidth ?? "$2"}>
                 {props.label}
