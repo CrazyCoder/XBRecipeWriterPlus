@@ -35,9 +35,13 @@ export default function AndroidNFCDialog(props: {
             onOpenChange={(isOpen: boolean) => !isOpen && props.onClose()}
             modal
             dismissOnSnapToBottom
-            snapPoints={[70, 100]} // Adjust heights as necessary
+            snapPoints={[70, 90]}
         >
-            <Sheet.Overlay/>
+            <Sheet.Overlay
+                animation="quick"
+                enterStyle={{opacity: 0}}
+                exitStyle={{opacity: 0}}
+            />
             <Sheet.Handle/>
             <Sheet.Frame
                 style={{

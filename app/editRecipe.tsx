@@ -298,12 +298,16 @@ export default function editRecipe() {
             <Dialog modal open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
                 <Adapt platform="touch">
                     <Sheet
-                        snapPoints={[Math.min(40 + restoreOptions.length * 15, 80), 100]}
+                        snapPoints={[Math.min(40 + restoreOptions.length * 15, 80), 90]}
                         zIndex={200000} modal dismissOnSnapToBottom>
                         <Sheet.Frame padding="$4">
                             <Adapt.Contents/>
                         </Sheet.Frame>
-                        <Sheet.Overlay/>
+                        <Sheet.Overlay
+                            animation="quick"
+                            enterStyle={{opacity: 0}}
+                            exitStyle={{opacity: 0}}
+                        />
                     </Sheet>
                 </Adapt>
 

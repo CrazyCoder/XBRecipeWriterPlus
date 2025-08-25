@@ -2,7 +2,7 @@ import {XBloomRecipe} from '@/library/XBloomRecipe';
 import {useRouter} from 'expo-router';
 import React, {useEffect, useState} from 'react';
 import {Image} from 'react-native';
-import {Adapt, Button, Dialog, Fieldset, Sheet, Text, XStack, YStack} from 'tamagui'
+import {Adapt, Button, Dialog, Fieldset, ScrollView, Sheet, Text, XStack, YStack} from 'tamagui'
 
 
 export default function ImportRecipeComponent(props: {
@@ -55,12 +55,16 @@ export default function ImportRecipeComponent(props: {
         <Dialog modal open={displayDialog} onOpenChange={(open) => onOpenChange(open)}>
             <Adapt platform="touch">
                 <Sheet
-                    snapPoints={[xBloomRecipe && xBloomRecipe.getImageURL() !== "" ? 55 : 20, 100]} // Adjust heights as necessary
+                    snapPoints={[xBloomRecipe && xBloomRecipe.getImageURL() !== "" ? 55 : 40, 90]}
                     zIndex={200000} modal dismissOnSnapToBottom>
                     <Sheet.Frame padding="$4">
                         <Adapt.Contents/>
                     </Sheet.Frame>
-                    <Sheet.Overlay/>
+                    <Sheet.Overlay
+                        animation="quick"
+                        enterStyle={{opacity: 0}}
+                        exitStyle={{opacity: 0}}
+                    />
                 </Sheet>
             </Adapt>
 
