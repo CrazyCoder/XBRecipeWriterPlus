@@ -31,7 +31,6 @@ export default function editRecipe() {
     const [writeProgress, setWriteProgress] = useState(0);
     const [showAndroidNFCDialog, setShowAndroidNFCDialog] = useState(false);
     const [key, setKey] = useState(0);
-    const [volKey, setVolKey] = useState(0);
     const [isLoadingTitle, setIsLoadingTitle] = useState(false);
     const [showRestoreDialog, setShowRestoreDialog] = useState(false);
     const [restoreOptions, setRestoreOptions] = useState<Array<{
@@ -55,6 +54,8 @@ export default function editRecipe() {
         }
     }, []);
 
+    const totalVolumeRef = useRef<{ forceUpdate: () => void } | null>(null);
+    const autoButtonRef = useRef<any>(null);
 
     const ON_OFF_BUTTON_CONFIG = {
         buttons:      [1, 0],
@@ -507,7 +508,6 @@ export default function editRecipe() {
 
     async function editInputComplete(label: string, value: string, pourNumber?: number) {
         if (!recipe) return;
-        console.log(label, pourNumber, value);
         // Recipe settings
         const fieldConfigs: Record<string, {
             requiresNumber: boolean;
@@ -532,14 +532,12 @@ export default function editRecipe() {
                 requiresNumber: true,
                 update:         (r: Recipe, val: string) => {
                     r.ratio = Number(val)
-                    setVolKey((prev) => prev + 1);
                 }
             },
             [RECIPE_LABELS.DOSE]:       {
                 requiresNumber: true,
                 update:         (r: Recipe, val: string) => {
                     r.dosage = Number(val)
-                    setVolKey((prev) => prev + 1);
                 }
             },
             [RECIPE_LABELS.XID]:        {
@@ -566,7 +564,6 @@ export default function editRecipe() {
             [RECIPE_LABELS.VOLUME]:           (r: Recipe, val: string, pourNum: number) =>
                                               {
                                                   r.pours[pourNum].volume = Number(val)
-                                                  setVolKey((prev) => prev + 1);
                                               },
             [RECIPE_LABELS.TEMPERATURE]:      (r: Recipe, val: string, pourNum: number) =>
                                                   r.pours[pourNum].temperature = Number(val),
@@ -590,20 +587,33 @@ export default function editRecipe() {
                 fieldConfig.update(recipe, value);
                 setEnableSave(true);
             }
-            return;
-        }
-
-        // Handle pour-specific fields
-        const pourField = pourFields[label];
-        if (pourField) {
-            if (pourNumber !== undefined && !isNaN(Number(value))) {
-                pourField(recipe, value, pourNumber);
-                setEnableSave(true);
+        } else {
+            // Handle pour-specific fields
+            const pourField = pourFields[label];
+            if (pourField) {
+                if (pourNumber !== undefined && !isNaN(Number(value))) {
+                    pourField(recipe, value, pourNumber);
+                    setEnableSave(true);
+                }
+            } else {
+                throw new Error("Unknown Edit Recipe Input field");
             }
-            return;
         }
+        // Check if the field affects volume calculations and force update
+        if (label === RECIPE_LABELS.RATIO ||
+            label === RECIPE_LABELS.DOSE ||
+            label === RECIPE_LABELS.VOLUME) {
+            totalVolumeRef.current?.forceUpdate();
 
-        throw new Error("Unknown Edit Recipe Input field");
+            // Update Auto button disabled state without re-rendering the whole component
+            if (autoButtonRef.current) {
+                const isDisabled = recipe.isPourVolumeValid();
+                autoButtonRef.current.setNativeProps({
+                    disabled: isDisabled,
+                    style: { opacity: isDisabled ? 0.5 : 1 }
+                });
+            }
+        }
     }
 
     return (
@@ -707,7 +717,7 @@ export default function editRecipe() {
                                 )}
                                 <XStack alignItems="center" flexWrap="wrap">
                                     <XStack paddingRight="$4">
-                                        <TotalVolumeComponent key={volKey} recipe={getRecipe()!}/>
+                                        <TotalVolumeComponent recipe={getRecipe()!} ref={totalVolumeRef} />
                                         <TooltipComponent
                                             content={"This field shows the total volume of all pours versus the total volume based on your dosage and ratio (sum of all pour volumes / dose × ratio). The numbers need to match for a valid recipe that the machine will accept. Adjust pour volumes, ratio, and dose as needed.\n\nTea recipes show 90ml per pour, but the actual volume in the cup will be 120ml per pour since the machine automatically adds ~30ml to trigger the siphon. If the siphon triggers prematurely due to wet leaf expansion, reduce the volume of the latter steeps."}/>
                                     </XStack>
@@ -719,6 +729,7 @@ export default function editRecipe() {
                                             fontWeight={700} fontSize="$5" color="white" minWidth="100"
                                             onPress={() => autoAdjustPourVolumes()}
                                             disabled={getRecipe()!.isPourVolumeValid()}
+                                            ref={autoButtonRef}
                                     >
                                         Auto
                                     </Button>
@@ -787,7 +798,7 @@ export default function editRecipe() {
 
                                                 <MyButtonGroup initialValue={"" + pour.getPourPattern()} minWidth={"$6"}
                                                                label="Pattern" size="$4" orientation="horizontal"
-                                                               onToggle={(val) => editInputComplete(RECIPE_LABELS.PAUSING, val, index)}
+                                                               onToggle={(val) => editInputComplete(RECIPE_LABELS.PATTERN, val, index)}
                                                                buttons={Object.values(POUR_PATTERN)}
                                                                getLabelText={Pour.getPourPatternText}
                                                 />

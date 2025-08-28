@@ -25,17 +25,10 @@ export default function ValidatedInput(props: Props) {
     const [value, setValue] = useState(props.initialValue);
     const isLongPressing = useRef(false);
 
-    const VALIDATION_DEBOUNCE = 300;
     const LONG_PRESS_REPEAT_START = 300;
-    const LONG_PRESS_REPEAT_MIN = 50;
+    const LONG_PRESS_REPEAT_MIN = 30;
 
     const oneStep = props.step ? props.step : 1;
-
-    // Use ref to track the last validated value to prevent duplicate validations
-    const lastValidatedValue = useRef<number | undefined>(props.initialValue);
-
-    // Debounce timer ref for async validation callback
-    const validationTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     // Long press timer refs
     const longPressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -51,8 +44,7 @@ export default function ValidatedInput(props: Props) {
         return numValue >= props.minimumValue && numValue <= props.maximumValue;
     }, [props.minimumValue, props.maximumValue]);
 
-    // Separate sync validation from async callback
-    const validateSync = useCallback((inputValue: string): boolean => {
+    const validateValue = useCallback((inputValue: string): boolean => {
         if (!inputValue || inputValue === "") {
             if (value !== undefined) {
                 setValue(undefined);
@@ -88,45 +80,23 @@ export default function ValidatedInput(props: Props) {
         return isValid;
     }, [value, validated, isValidValue, props.setErrorFunction]);
 
-    // Debounced async validation callback
-    const triggerAsyncValidation = useCallback((inputValue: string, numValue: number) => {
-        // Clear existing timer
-        if (validationTimer.current) {
-            clearTimeout(validationTimer.current);
-        }
-
-        // Only trigger async callback if value actually changed and is valid
-        if (props.onValidEditFunction &&
-            isValidValue(numValue) &&
-            lastValidatedValue.current !== numValue) {
-            // Debounce async validation
-            validationTimer.current = setTimeout(async () => {
-                lastValidatedValue.current = numValue;
-                console.log("Validation timer", numValue);
-                try {
-                    if (props.pourNumber !== undefined) {
-                        await props.onValidEditFunction!(props.label?.toString()!, inputValue, props.pourNumber);
-                    } else {
-                        await props.onValidEditFunction!(props.label?.toString()!, inputValue);
-                    }
-                } catch (error) {
-                    console.error('Validation callback error:', error);
-                }
-            }, VALIDATION_DEBOUNCE);
-        }
-    }, [props.onValidEditFunction, props.label, props.pourNumber, isValidValue]);
-
-    // Combined validation function
-    const validate = useCallback(async (inputValue: string): Promise<boolean> => {
-        const isValid = validateSync(inputValue);
-
+    const updateRecipe = useCallback((inputValue: string): boolean => {
+        const isValid = validateValue(inputValue);
         if (isValid) {
-            const numValue = parseInt(inputValue, 10);
-            triggerAsyncValidation(inputValue, numValue);
+            try {
+                if (props.onValidEditFunction) {
+                    if (props.pourNumber !== undefined) {
+                        void props.onValidEditFunction(props.label?.toString()!, inputValue, props.pourNumber);
+                    } else {
+                        void props.onValidEditFunction(props.label?.toString()!, inputValue);
+                    }
+                }
+            } catch (error) {
+                console.error('Validation callback error:', error);
+            }
         }
-
         return isValid;
-    }, [validateSync, triggerAsyncValidation]);
+    }, [validateValue, props.onValidEditFunction, props.label, props.pourNumber]);
 
     // Memoize processed value calculation
     const processedValue = useMemo((): string => {
@@ -136,51 +106,46 @@ export default function ValidatedInput(props: Props) {
         return value !== undefined ? value.toString() : "";
     }, [value, props.floatingPoint]);
 
-    const onValueChange = useCallback(async (sliderValue: number[]) => {
+    const onValueChange = useCallback((sliderValue: number[]) => {
         const newValue = sliderValue[0];
         if (value !== newValue) {
             setValue(newValue);
-            await validate(newValue.toString());
+            updateRecipe(newValue.toString());
         }
-    }, [value, validate]);
+    }, [value, updateRecipe]);
 
-    const onPlusPress = useCallback(async () => {
+    const onPlusPress = useCallback(() => {
         setValue(prevValue => {
             if (prevValue && prevValue + oneStep <= props.maximumValue) {
                 const newValue = prevValue + oneStep;
                 // Trigger validation after state update
-                validate(newValue.toString());
+                updateRecipe(newValue.toString());
                 return newValue;
             }
             return prevValue;
         });
-    }, [props.maximumValue, oneStep, validate]);
+    }, [props.maximumValue, oneStep, updateRecipe]);
 
-    const onMinusPress = useCallback(async () => {
+    const onMinusPress = useCallback(() => {
         setValue(prevValue => {
             if (prevValue && prevValue - oneStep >= props.minimumValue) {
                 const newValue = prevValue - oneStep;
-                // Trigger validation after state update
-                validate(newValue.toString());
+                updateRecipe(newValue.toString());
                 return newValue;
             }
             return prevValue;
         });
-    }, [props.minimumValue, oneStep, validate]);
+    }, [props.minimumValue, oneStep, updateRecipe]);
 
     const startLongPress = useCallback((pressFunction: () => void) => {
-        console.log("Start long press")
         isLongPressing.current = true;
         // Initial delay before starting repetitive calls
         longPressTimer.current = setTimeout(() => {
             // Start repetitive calls
             const repeatPress = () => {
-                console.log("Repeat press");
                 pressFunction();
-
                 // Reduce interval exponentially
                 currentInterval.current = Math.max(LONG_PRESS_REPEAT_MIN, currentInterval.current * 0.85);
-
                 longPressInterval.current = setTimeout(repeatPress, currentInterval.current);
             };
 
@@ -190,7 +155,6 @@ export default function ValidatedInput(props: Props) {
 
     const stopLongPress = useCallback(() => {
         const wasLongPressing = isLongPressing.current;
-        console.log("Stop long press", wasLongPressing)
         isLongPressing.current = false;
         if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
@@ -201,12 +165,7 @@ export default function ValidatedInput(props: Props) {
             longPressInterval.current = undefined;
         }
         currentInterval.current = LONG_PRESS_REPEAT_START; // Reset interval
-
-        // Trigger final validation after long press ends
-        if (wasLongPressing && value !== undefined) {
-            void validate(value.toString());
-        }
-    }, [value, validate]);
+    }, [value]);
 
     const onMinusLongPress = useCallback(() => {
         startLongPress(onMinusPress);
@@ -238,9 +197,6 @@ export default function ValidatedInput(props: Props) {
     // Cleanup timers on unmount
     React.useEffect(() => {
         return () => {
-            if (validationTimer.current) {
-                clearTimeout(validationTimer.current);
-            }
             if (longPressTimer.current) {
                 clearTimeout(longPressTimer.current);
             }
@@ -308,7 +264,7 @@ export default function ValidatedInput(props: Props) {
                     </View>
 
                     <XStack alignItems="center" alignContent="center">
-                        <Input padding="$2" value={processedValue} onChangeText={validate}
+                        <Input padding="$2" value={processedValue} onChangeText={updateRecipe}
                                focusStyle={{borderColor: validated ? "gray" : "red"}}
                                borderColor={validated ? "gray" : "red"} {...props} minWidth={"$4"}>
                         </Input>
