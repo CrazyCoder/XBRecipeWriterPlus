@@ -126,13 +126,12 @@ export default function editRecipe() {
     };
 
     useEffect(() => {
-        const r = getRecipe();
         // Only fetch if we have a recipe with valid XID but no meaningful title
-        if (r &&
-            r.xid &&
-            r.xid.trim().length > 0 &&
-            (!r.title || r.title.trim().length === 0)) {
-            void fetchRecipeTitle(r);
+        if (recipe &&
+            recipe.xid &&
+            recipe.xid.trim().length > 0 &&
+            (!recipe.title || recipe.title.trim().length === 0)) {
+            void fetchRecipeTitle(recipe);
         }
     }, [recipe]);
 
@@ -247,31 +246,10 @@ export default function editRecipe() {
     );
 
 
-    function deletePour(pourNumber: number) {
-        let r = getRecipe();
-        if (r && r.pours.length > 1) {
-            r.deletePour(pourNumber);
-            setRecipe(r);
-            setKey((prev) => prev + 1);
-            setEnableSave(true);
-        }
-    }
-
-    function autoAdjustPourVolumes() {
-        let r = getRecipe();
-        if (r) {
-            r.autoFixPourVolumes();
-            setRecipe(r);
-            setKey((prev) => prev + 1);
-            setEnableSave(true);
-        }
-    }
-
     function addPour(pourNumber: number) {
-        let r = getRecipe();
-        if (r) {
+        if (recipe) {
             // Limit tea recipes to maximum 3 pours
-            if (r.isTea() && r.pours.length >= 3) {
+            if (recipe.isTea() && recipe.pours.length >= 3) {
                 Alert.alert('Pour Limit', 'Tea recipes are limited to a maximum of 3 pours', [
                     {
                         text:    'Ok',
@@ -280,8 +258,23 @@ export default function editRecipe() {
                 ]);
                 return;
             }
-            r.addPour(pourNumber);
-            setRecipe(r);
+            recipe.addPour(pourNumber);
+            setKey((prev) => prev + 1);
+            setEnableSave(true);
+        }
+    }
+
+    function deletePour(pourNumber: number) {
+        if (recipe && recipe.pours.length > 1) {
+            recipe.deletePour(pourNumber);
+            setKey((prev) => prev + 1);
+            setEnableSave(true);
+        }
+    }
+
+    function autoAdjustPourVolumes() {
+        if (recipe) {
+            recipe.autoFixPourVolumes();
             setKey((prev) => prev + 1);
             setEnableSave(true);
         }
@@ -369,7 +362,6 @@ export default function editRecipe() {
     function restoreRecipe() {
         const alwaysKeepFields = ['uuid', 'backup', 'title'];
 
-        const recipe = getRecipe();
         if (!recipe) return;
 
         const options: Array<{
@@ -482,8 +474,8 @@ export default function editRecipe() {
 
     function saveRecipe() {
         console.log("Save Recipe");
+        if (!recipe) return;
         let db = new RecipeDatabase();
-        let recipe = getRecipe()!;
         if (recipe.isPourVolumeValid()) {
             if (titleChanged && db.doesTitleExist(recipe.title)) {
                 let r = db.getRecipe(recipe.uuid);
@@ -514,9 +506,8 @@ export default function editRecipe() {
     }
 
     async function editInputComplete(label: string, value: string, pourNumber?: number) {
-        let recipe = getRecipe();
-        if (recipe === null) return;
-
+        if (!recipe) return;
+        console.log(label, pourNumber, value);
         // Recipe settings
         const fieldConfigs: Record<string, {
             requiresNumber: boolean;
@@ -597,7 +588,6 @@ export default function editRecipe() {
             // Skip validation for non-numeric fields or validate numeric ones
             if (!fieldConfig.requiresNumber || !isNaN(Number(value))) {
                 fieldConfig.update(recipe, value);
-                setRecipe(recipe);
                 setEnableSave(true);
             }
             return;
@@ -608,7 +598,6 @@ export default function editRecipe() {
         if (pourField) {
             if (pourNumber !== undefined && !isNaN(Number(value))) {
                 pourField(recipe, value, pourNumber);
-                setRecipe(recipe);
                 setEnableSave(true);
             }
             return;
