@@ -23,6 +23,11 @@ type ValidEditCallbackFunction = (inputLabel: string, value: string, pourNumber?
 export default function ValidatedInput(props: Props) {
     const [validated, setValidated] = useState(true);
     const [value, setValue] = useState(props.initialValue);
+    const isLongPressing = useRef(false);
+
+    const VALIDATION_DEBOUNCE = 300;
+    const LONG_PRESS_REPEAT_START = 300;
+    const LONG_PRESS_REPEAT_MIN = 50;
 
     const oneStep = props.step ? props.step : 1;
 
@@ -31,6 +36,11 @@ export default function ValidatedInput(props: Props) {
 
     // Debounce timer ref for async validation callback
     const validationTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+    // Long press timer refs
+    const longPressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const longPressInterval = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+    const currentInterval = useRef<number>(LONG_PRESS_REPEAT_START); // Initial interval in ms
 
     const onIsSlidingChange = useCallback((isSliding: boolean) => {
         props.onIsSlidingChange?.(isSliding);
@@ -89,11 +99,10 @@ export default function ValidatedInput(props: Props) {
         if (props.onValidEditFunction &&
             isValidValue(numValue) &&
             lastValidatedValue.current !== numValue) {
-
-            lastValidatedValue.current = numValue;
-
             // Debounce async validation
             validationTimer.current = setTimeout(async () => {
+                lastValidatedValue.current = numValue;
+                console.log("Validation timer", numValue);
                 try {
                     if (props.pourNumber !== undefined) {
                         await props.onValidEditFunction!(props.label?.toString()!, inputValue, props.pourNumber);
@@ -103,7 +112,7 @@ export default function ValidatedInput(props: Props) {
                 } catch (error) {
                     console.error('Validation callback error:', error);
                 }
-            }, 100);
+            }, VALIDATION_DEBOUNCE);
         }
     }, [props.onValidEditFunction, props.label, props.pourNumber, isValidValue]);
 
@@ -135,21 +144,77 @@ export default function ValidatedInput(props: Props) {
         }
     }, [value, validate]);
 
-    const onMinusPress = useCallback(async () => {
-        if (value && value - oneStep >= props.minimumValue) {
-            const newValue = value - oneStep;
-            setValue(newValue);
-            await validate(newValue.toString());
-        }
-    }, [value, props.minimumValue, validate]);
-
     const onPlusPress = useCallback(async () => {
-        if (value && value + oneStep <= props.maximumValue) {
-            const newValue = value + oneStep;
-            setValue(newValue);
-            await validate(newValue.toString());
+        setValue(prevValue => {
+            if (prevValue && prevValue + oneStep <= props.maximumValue) {
+                const newValue = prevValue + oneStep;
+                // Trigger validation after state update
+                validate(newValue.toString());
+                return newValue;
+            }
+            return prevValue;
+        });
+    }, [props.maximumValue, oneStep, validate]);
+
+    const onMinusPress = useCallback(async () => {
+        setValue(prevValue => {
+            if (prevValue && prevValue - oneStep >= props.minimumValue) {
+                const newValue = prevValue - oneStep;
+                // Trigger validation after state update
+                validate(newValue.toString());
+                return newValue;
+            }
+            return prevValue;
+        });
+    }, [props.minimumValue, oneStep, validate]);
+
+    const startLongPress = useCallback((pressFunction: () => void) => {
+        console.log("Start long press")
+        isLongPressing.current = true;
+        // Initial delay before starting repetitive calls
+        longPressTimer.current = setTimeout(() => {
+            // Start repetitive calls
+            const repeatPress = () => {
+                console.log("Repeat press");
+                pressFunction();
+
+                // Reduce interval exponentially
+                currentInterval.current = Math.max(LONG_PRESS_REPEAT_MIN, currentInterval.current * 0.85);
+
+                longPressInterval.current = setTimeout(repeatPress, currentInterval.current);
+            };
+
+            repeatPress();
+        }, LONG_PRESS_REPEAT_START); // Initial delay
+    }, []);
+
+    const stopLongPress = useCallback(() => {
+        const wasLongPressing = isLongPressing.current;
+        console.log("Stop long press", wasLongPressing)
+        isLongPressing.current = false;
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = undefined;
         }
-    }, [value, props.maximumValue, validate]);
+        if (longPressInterval.current) {
+            clearInterval(longPressInterval.current);
+            longPressInterval.current = undefined;
+        }
+        currentInterval.current = LONG_PRESS_REPEAT_START; // Reset interval
+
+        // Trigger final validation after long press ends
+        if (wasLongPressing && value !== undefined) {
+            void validate(value.toString());
+        }
+    }, [value, validate]);
+
+    const onMinusLongPress = useCallback(() => {
+        startLongPress(onMinusPress);
+    }, [startLongPress, onMinusPress]);
+
+    const onPlusLongPress = useCallback(() => {
+        startLongPress(onPlusPress);
+    }, [startLongPress, onPlusPress]);
 
     // Memoize error message to avoid recalculation
     const errorMessage = useMemo((): string => {
@@ -170,14 +235,21 @@ export default function ValidatedInput(props: Props) {
         }
     ], []);
 
-    // Cleanup timer on unmount
+    // Cleanup timers on unmount
     React.useEffect(() => {
         return () => {
             if (validationTimer.current) {
                 clearTimeout(validationTimer.current);
             }
+            if (longPressTimer.current) {
+                clearTimeout(longPressTimer.current);
+            }
+            if (longPressInterval.current) {
+                clearInterval(longPressInterval.current);
+            }
         };
     }, []);
+
 
 
     return (
@@ -185,7 +257,7 @@ export default function ValidatedInput(props: Props) {
             <YStack>
                 <XStack padding="$2" alignItems="center" alignSelf="flex-start" flex={1} gap={"$4"}>
                     <XStack gap="$3">
-                        <Pressable onPress={onMinusPress} style={pressedButtonStyle}>
+                        <Pressable onPress={onMinusPress} onLongPress={onMinusLongPress} onPressOut={stopLongPress} style={pressedButtonStyle}>
                             <AntDesign padding={0} name="minuscircle" size={30} color="red"/>
                         </Pressable>
                     </XStack>
@@ -241,7 +313,7 @@ export default function ValidatedInput(props: Props) {
                                borderColor={validated ? "gray" : "red"} {...props} minWidth={"$4"}>
                         </Input>
                         <XStack paddingLeft="$3">
-                            <Pressable onPress={onPlusPress} style={pressedButtonStyle}>
+                            <Pressable onPress={onPlusPress} onLongPress={onPlusLongPress} onPressOut={stopLongPress} style={pressedButtonStyle}>
                                 <AntDesign padding={0} name="pluscircle" size={30} color="#ff5c00"/>
                             </Pressable>
                         </XStack>
