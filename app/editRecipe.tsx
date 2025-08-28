@@ -4,7 +4,7 @@ import Recipe, {CUP_TYPE} from "@/library/Recipe";
 import {AntDesign} from "@expo/vector-icons";
 import {Icon, IconElement} from "@ui-kitten/components";
 import {useLocalSearchParams, useNavigation} from "expo-router";
-import React, {useEffect, useMemo, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {ActivityIndicator, Alert, Platform, Pressable, useColorScheme, useWindowDimensions} from "react-native";
 
 
@@ -24,13 +24,14 @@ import {XBloomRecipe} from "@/library/XBloomRecipe";
 
 export default function editRecipe() {
     const {recipeJSON, saveEnabled} = useLocalSearchParams();
-    const [recipeInJSON, setRecipeInJSON] = useState<string>("");
+    const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [inputError, setInputError] = useState(false);
     const [titleChanged, setTitleChanged] = useState(false);
     const [enableSave, setEnableSave] = useState(saveEnabled && saveEnabled === "true");
     const [writeProgress, setWriteProgress] = useState(0);
     const [showAndroidNFCDialog, setShowAndroidNFCDialog] = useState(false);
     const [key, setKey] = useState(0);
+    const [volKey, setVolKey] = useState(0);
     const [isLoadingTitle, setIsLoadingTitle] = useState(false);
     const [showRestoreDialog, setShowRestoreDialog] = useState(false);
     const [restoreOptions, setRestoreOptions] = useState<Array<{
@@ -39,14 +40,21 @@ export default function editRecipe() {
         action: () => Promise<void>;
     }>>([]);
 
-
-    // Cache the Recipe object using useMemo
-    const cachedRecipe = useMemo<Recipe | null>(() => {
-        if (recipeInJSON && recipeInJSON !== "") {
-            return new Recipe(undefined, recipeInJSON);
+    // disable scrolling when using sliders
+    const scrollViewRefs = useRef<Map<string, ScrollView>>(new Map());
+    const handleSlidingChange = useCallback((sliding: boolean) => {
+        scrollViewRefs.current.forEach(scrollView => {
+            scrollView.setNativeProps({scrollEnabled: !sliding});
+        });
+    }, []);
+    const setScrollViewRef = useCallback((key: string) => (ref: ScrollView | null) => {
+        if (ref) {
+            scrollViewRefs.current.set(key, ref);
+        } else {
+            scrollViewRefs.current.delete(key);
         }
-        return null;
-    }, [recipeInJSON]);
+    }, []);
+
 
     const ON_OFF_BUTTON_CONFIG = {
         buttons:      [1, 0],
@@ -85,28 +93,28 @@ export default function editRecipe() {
             headerShown: true,
             headerRight: () => <IconButton onPress={() => writeCard()} title="" icon={writeCardIcon()}/>
         })
-    }, [navigation, recipeInJSON]);
+    }, [navigation, recipe]);
 
-    const fetchRecipeTitle = async (recipe: Recipe) => {
+    const fetchRecipeTitle = async (r: Recipe) => {
         setIsLoadingTitle(true);
 
         try {
-            const xbRecipe = new XBloomRecipe(recipe.xid);
+            const xbRecipe = new XBloomRecipe(r.xid);
             await xbRecipe.fetchRecipeDetail();
 
             let recipeTitle = xbRecipe.getRecipeTitle();
             if (recipeTitle.length > 0) {
                 // Update the current recipe with the fetched title
-                recipe.title = recipeTitle;
+                r.title = recipeTitle;
                 // Also get shareID for restore feature if not already present
                 let xbr = xbRecipe.getRecipe();
-                if (xbr && xbr.shareId.length > 0 && recipe.shareId.length == 0) {
-                    recipe.shareId = xbr.shareId;
+                if (xbr && xbr.shareId.length > 0 && r.shareId.length == 0) {
+                    r.shareId = xbr.shareId;
                 }
-                if (xbr && xbr.offline_backup.length > 0 && recipe.offline_backup.length == 0) {
-                    recipe.offline_backup = xbr.offline_backup;
+                if (xbr && xbr.offline_backup.length > 0 && r.offline_backup.length == 0) {
+                    r.offline_backup = xbr.offline_backup;
                 }
-                setRecipeInJSON(JSON.stringify(recipe));
+                setRecipe(r);
                 setTitleChanged(true);
                 setEnableSave(true);
             }
@@ -118,17 +126,20 @@ export default function editRecipe() {
     };
 
     useEffect(() => {
-        const recipe = getRecipe();
-        // Only fetch if we have a recipe with XID but no title
-        if (recipe && recipe.xid && recipe.title.length == 0) {
-            fetchRecipeTitle(recipe);
+        const r = getRecipe();
+        // Only fetch if we have a recipe with valid XID but no meaningful title
+        if (r &&
+            r.xid &&
+            r.xid.trim().length > 0 &&
+            (!r.title || r.title.trim().length === 0)) {
+            void fetchRecipeTitle(r);
         }
-    }, [recipeInJSON]);
+    }, [recipe]);
 
     const handleReloadTitlePress = async () => {
-        const recipe = getRecipe();
-        if (recipe && recipe.xid) {
-            await fetchRecipeTitle(recipe);
+        const r = getRecipe();
+        if (r && r.xid) {
+            await fetchRecipeTitle(r);
         }
     };
 
@@ -156,11 +167,14 @@ export default function editRecipe() {
     );
 
     function getRecipe(): Recipe | null {
-        return cachedRecipe;
+        return recipe;
     }
 
     useEffect(() => {
-        setRecipeInJSON(recipeJSON as string);
+        if (recipeJSON && recipeJSON !== "") {
+            const newRecipe = new Recipe(undefined, recipeJSON as string);
+            setRecipe(newRecipe);
+        }
     }, []);
 
     async function onNFCDialogClose() {
@@ -237,7 +251,7 @@ export default function editRecipe() {
         let r = getRecipe();
         if (r && r.pours.length > 1) {
             r.deletePour(pourNumber);
-            setRecipeInJSON(() => JSON.stringify(r));
+            setRecipe(r);
             setKey((prev) => prev + 1);
             setEnableSave(true);
         }
@@ -247,7 +261,7 @@ export default function editRecipe() {
         let r = getRecipe();
         if (r) {
             r.autoFixPourVolumes();
-            setRecipeInJSON(() => JSON.stringify(r));
+            setRecipe(r);
             setKey((prev) => prev + 1);
             setEnableSave(true);
         }
@@ -267,7 +281,7 @@ export default function editRecipe() {
                 return;
             }
             r.addPour(pourNumber);
-            setRecipeInJSON(() => JSON.stringify(r));
+            setRecipe(r);
             setKey((prev) => prev + 1);
             setEnableSave(true);
         }
@@ -298,7 +312,7 @@ export default function editRecipe() {
             <Dialog modal open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
                 <Adapt platform="touch">
                     <Sheet
-                        snapPoints={[Math.min(40 + restoreOptions.length * 15, 80), 90]}
+                        snapPoints={[Math.min(40 + restoreOptions.length * 15, 80)]}
                         zIndex={200000} modal dismissOnSnapToBottom>
                         <Sheet.Frame padding="$4">
                             <Adapt.Contents/>
@@ -384,7 +398,7 @@ export default function editRecipe() {
                     (restoredRecipe as any)[field] = value;
                 }
             }
-            setRecipeInJSON(JSON.stringify(restoredRecipe));
+            setRecipe(restoredRecipe);
             setEnableSave(true);
         }
 
@@ -420,7 +434,7 @@ export default function editRecipe() {
         if (recipe.xid && recipe.xid.trim().length > 0) {
             options.push({
                 id:     'xid',
-                label:  'Restore by XID from online database',
+                label:  'Restore by XID (online)',
                 action: async () => {
                     const xbRecipe = new XBloomRecipe(recipe.xid);
                     await xbRecipe.fetchRecipeDetail();
@@ -441,7 +455,7 @@ export default function editRecipe() {
         if (recipe.shareId && recipe.shareId.trim().length > 0) {
             options.push({
                 id:     'shareId',
-                label:  'Restore by Share Link from online database',
+                label:  'Restore by Share Link (online)',
                 action: async () => {
                     const xbRecipe = new XBloomRecipe(recipe.shareId);
                     await xbRecipe.fetchRecipeDetail();
@@ -468,7 +482,6 @@ export default function editRecipe() {
 
     function saveRecipe() {
         console.log("Save Recipe");
-        console.log(recipeInJSON);
         let db = new RecipeDatabase();
         let recipe = getRecipe()!;
         if (recipe.isPourVolumeValid()) {
@@ -526,11 +539,17 @@ export default function editRecipe() {
             },
             [RECIPE_LABELS.RATIO]:      {
                 requiresNumber: true,
-                update:         (r: Recipe, val: string) => r.ratio = Number(val)
+                update:         (r: Recipe, val: string) => {
+                    r.ratio = Number(val)
+                    setVolKey((prev) => prev + 1);
+                }
             },
             [RECIPE_LABELS.DOSE]:       {
                 requiresNumber: true,
-                update:         (r: Recipe, val: string) => r.dosage = Number(val)
+                update:         (r: Recipe, val: string) => {
+                    r.dosage = Number(val)
+                    setVolKey((prev) => prev + 1);
+                }
             },
             [RECIPE_LABELS.XID]:        {
                 requiresNumber: false,
@@ -554,7 +573,10 @@ export default function editRecipe() {
         // Handle pour-specific settings
         const pourFields: Record<string, (r: Recipe, val: string, pourNum: number) => void> = {
             [RECIPE_LABELS.VOLUME]:           (r: Recipe, val: string, pourNum: number) =>
-                                                  r.pours[pourNum].volume = Number(val),
+                                              {
+                                                  r.pours[pourNum].volume = Number(val)
+                                                  setVolKey((prev) => prev + 1);
+                                              },
             [RECIPE_LABELS.TEMPERATURE]:      (r: Recipe, val: string, pourNum: number) =>
                                                   r.pours[pourNum].temperature = Number(val),
             [RECIPE_LABELS.FLOW_RATE]:        (r: Recipe, val: string, pourNum: number) =>
@@ -575,7 +597,7 @@ export default function editRecipe() {
             // Skip validation for non-numeric fields or validate numeric ones
             if (!fieldConfig.requiresNumber || !isNaN(Number(value))) {
                 fieldConfig.update(recipe, value);
-                setRecipeInJSON(JSON.stringify(recipe));
+                setRecipe(recipe);
                 setEnableSave(true);
             }
             return;
@@ -586,7 +608,7 @@ export default function editRecipe() {
         if (pourField) {
             if (pourNumber !== undefined && !isNaN(Number(value))) {
                 pourField(recipe, value, pourNumber);
-                setRecipeInJSON(JSON.stringify(recipe));
+                setRecipe(recipe);
                 setEnableSave(true);
             }
             return;
@@ -597,10 +619,11 @@ export default function editRecipe() {
 
     return (
         <>
-            {recipeInJSON && getRecipe() && recipeInJSON !== "" ?
+            {recipe ?
                 <YStack maxWidth="100%" key={key} flex={1}>
                     <XStack flex={1}>
-                        <ScrollView showsVerticalScrollIndicator={false} margin="$2" nestedScrollEnabled={true}>
+                        <ScrollView showsVerticalScrollIndicator={false} margin="$2" nestedScrollEnabled={true}
+                                    ref={setScrollViewRef('vertical')}>
                             <YStack maxWidth="100%">
                                 <XStack alignItems="center">
                                     <LabeledInput setErrorFunction={setInputError} maxLength={100}
@@ -637,11 +660,15 @@ export default function editRecipe() {
                                                 minimumValue={1} maximumValue={getRecipe()!.isTea() ? 10 : 31} step={1}
                                                 label={RECIPE_LABELS.DOSE}
                                                 maxLength={2} inputMode="numeric"
-                                                onValidEditFunction={editInputComplete}/>
+                                                onValidEditFunction={editInputComplete}
+                                                onIsSlidingChange={handleSlidingChange}
+                                />
                                 <ValidatedInput setErrorFunction={setInputError} initialValue={getRecipe()!.ratio}
                                                 minimumValue={5} maximumValue={100} step={1} label={RECIPE_LABELS.RATIO}
                                                 maxLength={3}
-                                                inputMode="numeric" onValidEditFunction={editInputComplete}/>
+                                                inputMode="numeric" onValidEditFunction={editInputComplete}
+                                                onIsSlidingChange={handleSlidingChange}
+                                />
                                 {(getRecipe()!.grinder && !getRecipe()!.isTea()) && (
                                     <>
                                         <ValidatedInput setErrorFunction={setInputError}
@@ -649,13 +676,17 @@ export default function editRecipe() {
                                                         minimumValue={40} maximumValue={80} step={1}
                                                         label={RECIPE_LABELS.GRIND_SIZE}
                                                         maxLength={2} inputMode="numeric"
-                                                        onValidEditFunction={editInputComplete}/>
+                                                        onValidEditFunction={editInputComplete}
+                                                        onIsSlidingChange={handleSlidingChange}
+                                        />
                                         <ValidatedInput setErrorFunction={setInputError}
                                                         initialValue={getRecipe()!.grindRPM}
                                                         minimumValue={60} maximumValue={120} step={10}
                                                         label={RECIPE_LABELS.GRIND_RPM}
                                                         maxLength={3} inputMode="numeric"
-                                                        onValidEditFunction={editInputComplete}/>
+                                                        onValidEditFunction={editInputComplete}
+                                                        onIsSlidingChange={handleSlidingChange}
+                                        />
                                     </>
                                 )}
                                 {!getRecipe()!.isTea() && (
@@ -686,8 +717,8 @@ export default function editRecipe() {
                                     </>
                                 )}
                                 <XStack alignItems="center" flexWrap="wrap">
-                                    <XStack>
-                                        <TotalVolumeComponent recipe={getRecipe()!}/>
+                                    <XStack paddingRight="$4">
+                                        <TotalVolumeComponent key={volKey} recipe={getRecipe()!}/>
                                         <TooltipComponent
                                             content={"This field shows the total volume of all pours versus the total volume based on your dosage and ratio (sum of all pour volumes / dose × ratio). The numbers need to match for a valid recipe that the machine will accept. Adjust pour volumes, ratio, and dose as needed.\n\nTea recipes show 90ml per pour, but the actual volume in the cup will be 120ml per pour since the machine automatically adds ~30ml to trigger the siphon. If the siphon triggers prematurely due to wet leaf expansion, reduce the volume of the latter steeps."}/>
                                     </XStack>
@@ -695,15 +726,19 @@ export default function editRecipe() {
                                             pressStyle={{backgroundColor: "#de4f00", borderColor: "gray"}}
                                             borderColor="gray" paddingHorizontal="$3" paddingVertical="$2"
                                             marginHorizontal="$2" marginVertical="$2" backgroundColor="#f4511e"
-                                            fontWeight={700} fontSize="$5" color="white"
-                                            onPress={() => autoAdjustPourVolumes()}>
+                                            disabledStyle={{opacity: 0.5}}
+                                            fontWeight={700} fontSize="$5" color="white" minWidth="100"
+                                            onPress={() => autoAdjustPourVolumes()}
+                                            disabled={getRecipe()!.isPourVolumeValid()}
+                                    >
                                         Auto
                                     </Button>
                                 </XStack>
 
                                 <ScrollView showsHorizontalScrollIndicator={false} centerContent={true} horizontal
                                             pagingEnabled={true} nestedScrollEnabled={true} removeClippedSubviews={true}
-                                            disableScrollViewPanResponder={true}>
+                                            ref={setScrollViewRef('horizontal')}
+                                >
                                     {getRecipe() ? getRecipe()!.pours.map((pour, index) => (
                                         <YStack width={width - getTokens().size["$2"].val} key={index} borderWidth={2}
                                                 borderColor="gray" marginInline="$2" borderRadius={10}>
@@ -728,14 +763,18 @@ export default function editRecipe() {
                                                                 pourNumber={index} label={RECIPE_LABELS.VOLUME}
                                                                 maxLength={3}
                                                                 inputMode="numeric" style={{maxWidth: 100}}
-                                                                onValidEditFunction={editInputComplete}/>
+                                                                onValidEditFunction={editInputComplete}
+                                                                onIsSlidingChange={handleSlidingChange}
+                                                />
 
                                                 <ValidatedInput setErrorFunction={setInputError}
                                                                 initialValue={pour.getTemperature()} minimumValue={39}
                                                                 maximumValue={99} step={1} pourNumber={index}
                                                                 label={RECIPE_LABELS.TEMPERATURE} maxLength={2}
                                                                 inputMode="numeric"
-                                                                onValidEditFunction={editInputComplete}/>
+                                                                onValidEditFunction={editInputComplete}
+                                                                onIsSlidingChange={handleSlidingChange}
+                                                />
 
                                                 <ValidatedInput setErrorFunction={setInputError}
                                                                 initialValue={pour.getFlowRate()} minimumValue={30}
@@ -743,7 +782,9 @@ export default function editRecipe() {
                                                                 pourNumber={index} label={RECIPE_LABELS.FLOW_RATE}
                                                                 maxLength={4}
                                                                 inputMode="decimal"
-                                                                onValidEditFunction={editInputComplete}/>
+                                                                onValidEditFunction={editInputComplete}
+                                                                onIsSlidingChange={handleSlidingChange}
+                                                />
 
                                                 <ValidatedInput setErrorFunction={setInputError}
                                                                 initialValue={pour.getPauseTime()} minimumValue={0}
@@ -751,7 +792,9 @@ export default function editRecipe() {
                                                                 pourNumber={index} label={RECIPE_LABELS.PAUSING}
                                                                 maxLength={3}
                                                                 inputMode="numeric"
-                                                                onValidEditFunction={editInputComplete}/>
+                                                                onValidEditFunction={editInputComplete}
+                                                                onIsSlidingChange={handleSlidingChange}
+                                                />
 
                                                 <MyButtonGroup initialValue={"" + pour.getPourPattern()} minWidth={"$6"}
                                                                label="Pattern" size="$4" orientation="horizontal"

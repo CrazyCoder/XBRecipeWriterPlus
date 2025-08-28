@@ -20,12 +20,14 @@ class RecipeDatabase {
 
     public insertRecipe(recipe: Recipe): void {
         if (recipe && !this.getRecipe(recipe.uuid)) {
+            let recipeJson = JSON.stringify(recipe);
+            console.log(recipeJson);
             this.db.runSync(`
                         INSERT INTO recipes (uuid, recipeJSON)
                         VALUES (?, ?);`,
                 [
                     recipe.uuid,
-                    JSON.stringify(recipe)
+                    recipeJson
                 ]
             );
         } else {
@@ -39,12 +41,14 @@ class RecipeDatabase {
             this.insertRecipe(updatedRecipe);
             return;
         } else {
+            let updatedRecipeJson = JSON.stringify(updatedRecipe);
+            console.log(updatedRecipeJson);
             this.db.runSync(`
                         UPDATE recipes
                         SET recipeJSON = ?
                         WHERE uuid = ?;`,
                 [
-                    JSON.stringify(updatedRecipe),
+                    updatedRecipeJson,
                     uuid
                 ]
             );
@@ -123,7 +127,7 @@ class RecipeDatabase {
     public retrieveAllRecipes(): Recipe[] | null {
         let recipesJSON: any[] = this.db.getAllSync(
             `SELECT *
-             FROM recipes;`,
+             FROM recipes;`
         );
         if (recipesJSON && recipesJSON.length > 0) {
             let recipes: Recipe[] = [];
