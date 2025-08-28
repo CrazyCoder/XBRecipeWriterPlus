@@ -44,7 +44,7 @@ export default function RootLayout() {
     return (
         <ShareIntentProvider
             options={{
-                debug: false,
+                debug:             false,
                 resetOnBackground: true
             }}>
             <GestureHandlerRootView style={{flex: 1}}>
