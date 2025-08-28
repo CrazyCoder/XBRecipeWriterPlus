@@ -55,7 +55,7 @@ export default function ImportRecipeComponent(props: {
         <Dialog modal open={displayDialog} onOpenChange={(open) => onOpenChange(open)}>
             <Adapt platform="touch">
                 <Sheet
-                    snapPoints={[xBloomRecipe && xBloomRecipe.getImageURL() !== "" ? 55 : 40, 90]}
+                    snapPoints={[xBloomRecipe && xBloomRecipe.getImageURL() !== "" ? 70 : 50]}
                     zIndex={200000} modal dismissOnSnapToBottom>
                     <Sheet.Frame padding="$4">
                         <Adapt.Contents/>
