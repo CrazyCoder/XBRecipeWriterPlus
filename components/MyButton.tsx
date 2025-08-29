@@ -1,7 +1,6 @@
 import React from 'react';
 import {useColorScheme} from 'react-native';
-import {H6} from 'tamagui';
-import {MyToggleGroupItem} from './MyToggleGroupItem';
+import {H6, styled, ToggleGroup} from 'tamagui';
 
 interface MyButtonProps {
     id: number;
@@ -11,6 +10,16 @@ interface MyButtonProps {
 
 export function MyButton({id, label, value}: MyButtonProps) {
     const colorScheme = useColorScheme();
+
+    const MyToggleGroupItem = styled(ToggleGroup.Item, {
+        variants: {
+            active: {
+                true: {
+                    backgroundColor: 'red',
+                },
+            },
+        },
+    });
 
     let main_text_color = colorScheme === 'light' ? "black" : "white";
     let inverse_text_color = colorScheme === 'light' ? "white" : "black";
