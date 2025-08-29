@@ -25,7 +25,7 @@ export default function ValidatedInput(props: Props) {
     const [value, setValue] = useState(props.initialValue);
     const isLongPressing = useRef(false);
 
-    const LONG_PRESS_REPEAT_START = 300;
+    const LONG_PRESS_REPEAT_START = 200;
     const LONG_PRESS_REPEAT_MIN = 30;
 
     const oneStep = props.step ? props.step : 1;
@@ -154,7 +154,6 @@ export default function ValidatedInput(props: Props) {
     }, []);
 
     const stopLongPress = useCallback(() => {
-        const wasLongPressing = isLongPressing.current;
         isLongPressing.current = false;
         if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
