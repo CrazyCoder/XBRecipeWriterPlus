@@ -62,7 +62,7 @@ export default function editRecipe() {
         getLabelText: (id: number) => id === 1 ? "On" : "Off"
     };
 
-    const RECIPE_LABELS = {
+    const RECIPE_LABELS = useMemo(() => ({
         TITLE:            "Title",
         XID:              "XID",
         DOSE:             "Dose (g)",
@@ -78,8 +78,7 @@ export default function editRecipe() {
         PATTERN:          "Pattern",
         AGITATION_BEFORE: "Agitation before",
         AGITATION_AFTER:  "Agitation after"
-    } as const;
-
+    } as const), []);
 
     const nfc = new NFC();
 
@@ -506,7 +505,7 @@ export default function editRecipe() {
         }
     }
 
-    async function editInputComplete(label: string, value: string, pourNumber?: number) {
+    const editInputComplete = useCallback(async (label: string, value: string, pourNumber?: number) => {
         if (!recipe) return;
         // Recipe settings
         const fieldConfigs: Record<string, {
@@ -614,12 +613,12 @@ export default function editRecipe() {
                 });
             }
         }
-    }
+    }, [recipe, setKey, setEnableSave, setTitleChanged, totalVolumeRef, autoButtonRef, RECIPE_LABELS]);
 
     return (
         <>
             {recipe ?
-                <YStack maxWidth="100%" key={key} flex={1}>
+                <YStack maxWidth="100%" flex={1}>
                     <XStack flex={1}>
                         <ScrollView showsVerticalScrollIndicator={false} margin="$2" nestedScrollEnabled={true}
                                     ref={setScrollViewRef('vertical')}>
